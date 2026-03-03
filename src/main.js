@@ -1,9 +1,4 @@
-// ============================================================
-// STATE
-// ============================================================
-
-let tasks = [];
-let nextId = 1;
+import { supabase } from './supabase.js';
 
 // ============================================================
 // DOM REFERENCES
@@ -42,11 +37,21 @@ function isOverdue(dateStr) {
   return due < today;
 }
 
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+}
+
+function showError(message) {
+  console.error('[Ink & Tasks]', message);
+}
+
 // ============================================================
 // RENDER
 // ============================================================
 
-function renderTasks() {
+function renderTasks(tasks) {
   todoList.innerHTML = '';
 
   const remaining = tasks.filter(t => !t.completed).length;
@@ -66,7 +71,6 @@ function renderTasks() {
     li.className = `todo-item${task.completed ? ' completed' : ''}`;
     li.dataset.id = task.id;
 
-    // Priority badge HTML
     const priorityBadge = task.priority
       ? `<span class="badge badge--${task.priority}">
            <i class="ph-thin ph-flag"></i>
@@ -74,25 +78,20 @@ function renderTasks() {
          </span>`
       : '';
 
-    // Due date HTML
     let dueDateHtml = '';
-    if (task.dueDate) {
-      const overdue = !task.completed && isOverdue(task.dueDate);
+    if (task.due_date) {
+      const overdue = !task.completed && isOverdue(task.due_date);
       dueDateHtml = `<span class="todo-due${overdue ? ' overdue' : ''}">
         <i class="ph-thin ph-calendar-blank"></i>
-        ${formatDateDisplay(task.dueDate)}${overdue ? ' · overdue' : ''}
+        ${formatDateDisplay(task.due_date)}${overdue ? ' · overdue' : ''}
       </span>`;
     }
 
-    // Notes HTML
     const notesHtml = task.notes
       ? `<p class="todo-notes">${escapeHtml(task.notes)}</p>`
       : '';
 
-    // Checkbox icon
-    const checkIcon = task.completed
-      ? 'ph-check-circle'
-      : 'ph-circle';
+    const checkIcon = task.completed ? 'ph-check-circle' : 'ph-circle';
 
     li.innerHTML = `
       <button class="todo-check" aria-label="${task.completed ? 'Mark incomplete' : 'Mark complete'}" data-action="complete">
@@ -112,75 +111,95 @@ function renderTasks() {
   });
 }
 
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.appendChild(document.createTextNode(str));
-  return div.innerHTML;
+// ============================================================
+// DATABASE OPERATIONS
+// ============================================================
+
+async function loadTasks() {
+  const { data, error } = await supabase
+    .from('todos')
+    .select('*')
+    .order('created_at', { ascending: true });
+
+  if (error) { showError(error.message); return; }
+  renderTasks(data);
 }
 
-// ============================================================
-// ACTIONS
-// ============================================================
-
-function addTask({ text, dueDate, priority, notes }) {
-  tasks.push({
-    id: nextId++,
+async function addTask({ text, dueDate, priority, notes }) {
+  const { error } = await supabase.from('todos').insert({
     text,
     completed: false,
-    dueDate:   dueDate   || null,
+    due_date:  dueDate   || null,
     priority:  priority  || null,
     notes:     notes     || null,
-    createdAt: new Date().toISOString(),
   });
-  renderTasks();
+
+  if (error) { showError(error.message); return; }
+  await loadTasks();
 }
 
-function completeTask(id) {
-  const task = tasks.find(t => t.id === id);
-  if (task) {
-    task.completed = !task.completed;
-    renderTasks();
-  }
+async function completeTask(id, currentValue) {
+  const { error } = await supabase
+    .from('todos')
+    .update({ completed: !currentValue })
+    .eq('id', id);
+
+  if (error) { showError(error.message); return; }
+  await loadTasks();
 }
 
-function deleteTask(id) {
-  tasks = tasks.filter(t => t.id !== id);
-  renderTasks();
+async function deleteTask(id) {
+  const { error } = await supabase
+    .from('todos')
+    .delete()
+    .eq('id', id);
+
+  if (error) { showError(error.message); return; }
+  await loadTasks();
 }
 
 // ============================================================
 // EVENT LISTENERS
 // ============================================================
 
-addForm.addEventListener('submit', (e) => {
+addForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const text = taskInput.value.trim();
-  if (!text) {
-    taskInput.focus();
-    return;
-  }
-  addTask({
+  if (!text) { taskInput.focus(); return; }
+
+  const btn = addForm.querySelector('.btn--primary');
+  btn.disabled = true;
+
+  await addTask({
     text,
-    dueDate:  dueDateInput.value  || null,
-    priority: priorityInput.value || null,
-    notes:    notesInput.value.trim() || null,
+    dueDate:  dueDateInput.value       || null,
+    priority: priorityInput.value      || null,
+    notes:    notesInput.value.trim()  || null,
   });
+
   addForm.reset();
+  btn.disabled = false;
   taskInput.focus();
 });
 
-todoList.addEventListener('click', (e) => {
+todoList.addEventListener('click', async (e) => {
   const item   = e.target.closest('.todo-item');
   const action = e.target.closest('[data-action]')?.dataset.action;
   if (!item || !action) return;
 
-  const id = Number(item.dataset.id);
-  if (action === 'complete') completeTask(id);
-  if (action === 'delete')   deleteTask(id);
+  const id = item.dataset.id;
+
+  if (action === 'complete') {
+    const isCompleted = item.classList.contains('completed');
+    await completeTask(id, isCompleted);
+  }
+  if (action === 'delete') {
+    await deleteTask(id);
+  }
 });
 
 // ============================================================
 // INIT
 // ============================================================
 
-renderTasks();
+loadTasks();
