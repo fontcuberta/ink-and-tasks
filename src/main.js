@@ -1,7 +1,16 @@
 import { supabase } from './supabase.js';
+import {
+  initAuth,
+  isAnonymous,
+  signUpWithEmail,
+  signInWithEmail,
+  signInWithGoogle,
+  signOut,
+  currentUser,
+} from './auth.js';
 
 // ============================================================
-// DOM REFERENCES
+// DOM REFERENCES — tasks
 // ============================================================
 
 const addForm       = document.getElementById('add-form');
@@ -12,6 +21,25 @@ const notesInput    = document.getElementById('notes-input');
 const todoList      = document.getElementById('todo-list');
 const emptyState    = document.getElementById('empty-state');
 const taskCount     = document.getElementById('task-count');
+
+// ============================================================
+// DOM REFERENCES — auth
+// ============================================================
+
+const authBar       = document.getElementById('auth-bar');
+const authBarBtn    = document.getElementById('auth-bar-btn');
+const authOverlay   = document.getElementById('auth-overlay');
+const authCloseBtn  = document.getElementById('auth-close-btn');
+const authTabs      = document.querySelectorAll('.auth-tab');
+const googleBtn     = document.getElementById('google-btn');
+const googleBtnLabel = document.getElementById('google-btn-label');
+const authForm      = document.getElementById('auth-form');
+const authEmail     = document.getElementById('auth-email');
+const authPassword  = document.getElementById('auth-password');
+const authSubmitBtn = document.getElementById('auth-submit-btn');
+const authError     = document.getElementById('auth-error');
+const authSubtitle  = document.getElementById('auth-subtitle');
+const authStatus    = document.getElementById('auth-status');
 
 // ============================================================
 // UTILITIES
@@ -25,8 +53,9 @@ function formatDate(dateStr) {
 
 function formatDateDisplay(dateStr) {
   if (!dateStr) return '';
-  const date = formatDate(dateStr);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return formatDate(dateStr).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
 }
 
 function isOverdue(dateStr) {
@@ -43,12 +72,8 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-function showError(message) {
-  console.error('[Ink & Tasks]', message);
-}
-
 // ============================================================
-// RENDER
+// RENDER — tasks
 // ============================================================
 
 function renderTasks(tasks) {
@@ -73,8 +98,7 @@ function renderTasks(tasks) {
 
     const priorityBadge = task.priority
       ? `<span class="badge badge--${task.priority}">
-           <i class="ph-thin ph-flag"></i>
-           ${task.priority}
+           <i class="ph-thin ph-flag"></i>${task.priority}
          </span>`
       : '';
 
@@ -112,6 +136,30 @@ function renderTasks(tasks) {
 }
 
 // ============================================================
+// RENDER — auth UI
+// ============================================================
+
+function renderAuthUI(user) {
+  const anon = isAnonymous(user);
+
+  // Auth bar — only show for anonymous users
+  authBar.hidden = !anon;
+
+  // Footer auth status
+  if (!user || anon) {
+    authStatus.innerHTML = '';
+  } else {
+    const email = user.email || user.user_metadata?.full_name || 'Signed in';
+    authStatus.innerHTML = `
+      <i class="ph-thin ph-user-circle"></i>
+      <span class="auth-status__email">${escapeHtml(email)}</span>
+      <button class="btn--signout" id="sign-out-btn">Sign out</button>
+    `;
+    document.getElementById('sign-out-btn')?.addEventListener('click', handleSignOut);
+  }
+}
+
+// ============================================================
 // DATABASE OPERATIONS
 // ============================================================
 
@@ -121,8 +169,8 @@ async function loadTasks() {
     .select('*')
     .order('created_at', { ascending: true });
 
-  if (error) { showError(error.message); return; }
-  renderTasks(data);
+  if (error) { console.error('[Ink & Tasks]', error.message); return; }
+  renderTasks(data ?? []);
 }
 
 async function addTask({ text, dueDate, priority, notes }) {
@@ -132,9 +180,10 @@ async function addTask({ text, dueDate, priority, notes }) {
     due_date:  dueDate   || null,
     priority:  priority  || null,
     notes:     notes     || null,
+    user_id:   currentUser?.id ?? null,
   });
 
-  if (error) { showError(error.message); return; }
+  if (error) { console.error('[Ink & Tasks]', error.message); return; }
   await loadTasks();
 }
 
@@ -144,7 +193,7 @@ async function completeTask(id, currentValue) {
     .update({ completed: !currentValue })
     .eq('id', id);
 
-  if (error) { showError(error.message); return; }
+  if (error) { console.error('[Ink & Tasks]', error.message); return; }
   await loadTasks();
 }
 
@@ -154,12 +203,95 @@ async function deleteTask(id) {
     .delete()
     .eq('id', id);
 
-  if (error) { showError(error.message); return; }
+  if (error) { console.error('[Ink & Tasks]', error.message); return; }
   await loadTasks();
 }
 
 // ============================================================
-// EVENT LISTENERS
+// AUTH MODAL HELPERS
+// ============================================================
+
+let activeTab = 'signup';
+
+function openModal() {
+  authOverlay.hidden = false;
+  document.body.style.overflow = 'hidden';
+  authEmail.focus();
+}
+
+function closeModal() {
+  authOverlay.hidden = true;
+  document.body.style.overflow = '';
+  authError.hidden = true;
+  authForm.reset();
+}
+
+function setTab(tab) {
+  activeTab = tab;
+  authTabs.forEach(t => t.classList.toggle('auth-tab--active', t.dataset.tab === tab));
+
+  if (tab === 'signup') {
+    authSubmitBtn.textContent = 'Create account';
+    googleBtnLabel.textContent = 'Continue with Google';
+    authSubtitle.textContent = 'Save your tasks and access them anywhere.';
+  } else {
+    authSubmitBtn.textContent = 'Sign in';
+    googleBtnLabel.textContent = 'Sign in with Google';
+    authSubtitle.textContent = 'Welcome back. Sign in to see your tasks.';
+  }
+}
+
+function showAuthError(message) {
+  authError.textContent = message;
+  authError.hidden = false;
+}
+
+// ============================================================
+// AUTH ACTION HANDLERS
+// ============================================================
+
+async function handleEmailSubmit(e) {
+  e.preventDefault();
+  authError.hidden = true;
+
+  const email    = authEmail.value.trim();
+  const password = authPassword.value;
+
+  if (!email || !password) return;
+
+  authSubmitBtn.disabled = true;
+  authSubmitBtn.textContent = 'Please wait…';
+
+  let result;
+  if (activeTab === 'signup') {
+    result = await signUpWithEmail(email, password);
+  } else {
+    result = await signInWithEmail(email, password);
+  }
+
+  authSubmitBtn.disabled = false;
+  setTab(activeTab);
+
+  if (result.error) {
+    showAuthError(result.error.message);
+    return;
+  }
+
+  closeModal();
+}
+
+async function handleGoogleClick() {
+  authError.hidden = true;
+  const result = await signInWithGoogle();
+  if (result?.error) showAuthError(result.error.message);
+}
+
+async function handleSignOut() {
+  await signOut();
+}
+
+// ============================================================
+// EVENT LISTENERS — tasks
 // ============================================================
 
 addForm.addEventListener('submit', async (e) => {
@@ -172,9 +304,9 @@ addForm.addEventListener('submit', async (e) => {
 
   await addTask({
     text,
-    dueDate:  dueDateInput.value       || null,
-    priority: priorityInput.value      || null,
-    notes:    notesInput.value.trim()  || null,
+    dueDate:  dueDateInput.value      || null,
+    priority: priorityInput.value     || null,
+    notes:    notesInput.value.trim() || null,
   });
 
   addForm.reset();
@@ -188,18 +320,37 @@ todoList.addEventListener('click', async (e) => {
   if (!item || !action) return;
 
   const id = item.dataset.id;
+  if (action === 'complete') await completeTask(id, item.classList.contains('completed'));
+  if (action === 'delete')   await deleteTask(id);
+});
 
-  if (action === 'complete') {
-    const isCompleted = item.classList.contains('completed');
-    await completeTask(id, isCompleted);
-  }
-  if (action === 'delete') {
-    await deleteTask(id);
-  }
+// ============================================================
+// EVENT LISTENERS — auth
+// ============================================================
+
+authBarBtn.addEventListener('click', () => { setTab('signup'); openModal(); });
+authCloseBtn.addEventListener('click', closeModal);
+authOverlay.addEventListener('click', (e) => { if (e.target === authOverlay) closeModal(); });
+authTabs.forEach(tab => tab.addEventListener('click', () => setTab(tab.dataset.tab)));
+googleBtn.addEventListener('click', handleGoogleClick);
+authForm.addEventListener('submit', handleEmailSubmit);
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !authOverlay.hidden) closeModal();
 });
 
 // ============================================================
 // INIT
 // ============================================================
 
-loadTasks();
+async function init() {
+  const user = await initAuth((updatedUser) => {
+    renderAuthUI(updatedUser);
+    loadTasks();
+  });
+
+  renderAuthUI(user);
+  await loadTasks();
+}
+
+init();
