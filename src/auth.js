@@ -52,22 +52,6 @@ export async function signInWithEmail(email, password) {
   return await supabase.auth.signInWithPassword({ email, password });
 }
 
-// Anonymous user → link Google identity (keeps user_id, tasks preserved)
-// Signed-in user → sign in fresh with Google
-export async function signInWithGoogle() {
-  const redirectTo = window.location.origin;
-  if (currentUser?.is_anonymous) {
-    return await supabase.auth.linkIdentity({
-      provider: 'google',
-      options: { redirectTo },
-    });
-  }
-  return await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo },
-  });
-}
-
 export async function signOut() {
   await supabase.auth.signOut();
   // Always return to an anonymous session after sign-out

@@ -4,7 +4,6 @@ import {
   isAnonymous,
   signUpWithEmail,
   signInWithEmail,
-  signInWithGoogle,
   signOut,
   currentUser,
 } from './auth.js';
@@ -31,8 +30,6 @@ const authBarBtn    = document.getElementById('auth-bar-btn');
 const authOverlay   = document.getElementById('auth-overlay');
 const authCloseBtn  = document.getElementById('auth-close-btn');
 const authTabs      = document.querySelectorAll('.auth-tab');
-const googleBtn     = document.getElementById('google-btn');
-const googleBtnLabel = document.getElementById('google-btn-label');
 const authForm      = document.getElementById('auth-form');
 const authEmail     = document.getElementById('auth-email');
 const authPassword  = document.getElementById('auth-password');
@@ -232,11 +229,9 @@ function setTab(tab) {
 
   if (tab === 'signup') {
     authSubmitBtn.textContent = 'Create account';
-    googleBtnLabel.textContent = 'Continue with Google';
     authSubtitle.textContent = 'Save your tasks and access them anywhere.';
   } else {
     authSubmitBtn.textContent = 'Sign in';
-    googleBtnLabel.textContent = 'Sign in with Google';
     authSubtitle.textContent = 'Welcome back. Sign in to see your tasks.';
   }
 }
@@ -278,12 +273,6 @@ async function handleEmailSubmit(e) {
   }
 
   closeModal();
-}
-
-async function handleGoogleClick() {
-  authError.hidden = true;
-  const result = await signInWithGoogle();
-  if (result?.error) showAuthError(result.error.message);
 }
 
 async function handleSignOut() {
@@ -332,7 +321,6 @@ authBarBtn.addEventListener('click', () => { setTab('signup'); openModal(); });
 authCloseBtn.addEventListener('click', closeModal);
 authOverlay.addEventListener('click', (e) => { if (e.target === authOverlay) closeModal(); });
 authTabs.forEach(tab => tab.addEventListener('click', () => setTab(tab.dataset.tab)));
-googleBtn.addEventListener('click', handleGoogleClick);
 authForm.addEventListener('submit', handleEmailSubmit);
 
 document.addEventListener('keydown', (e) => {
