@@ -36,7 +36,8 @@ const authPassword  = document.getElementById('auth-password');
 const authSubmitBtn = document.getElementById('auth-submit-btn');
 const authError     = document.getElementById('auth-error');
 const authSubtitle  = document.getElementById('auth-subtitle');
-const authStatus    = document.getElementById('auth-status');
+const authStatus       = document.getElementById('auth-status');
+const toastContainer   = document.getElementById('toast-container');
 
 // ============================================================
 // UTILITIES
@@ -67,6 +68,35 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.appendChild(document.createTextNode(str));
   return div.innerHTML;
+}
+
+// ============================================================
+// TOASTS
+// ============================================================
+
+const TOAST_ICONS = {
+  success: 'ph-check-circle',
+  error:   'ph-warning-circle',
+  info:    'ph-info',
+};
+
+function showToast(title, { message = '', type = 'info', duration = 4000 } = {}) {
+  const toast = document.createElement('div');
+  toast.className = `toast toast--${type}`;
+  toast.innerHTML = `
+    <i class="ph-thin ${TOAST_ICONS[type]} toast__icon"></i>
+    <div class="toast__body">
+      <p class="toast__title">${escapeHtml(title)}</p>
+      ${message ? `<p class="toast__message">${escapeHtml(message)}</p>` : ''}
+    </div>
+  `;
+
+  toastContainer.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('toast--exit');
+    toast.addEventListener('animationend', () => toast.remove(), { once: true });
+  }, duration);
 }
 
 // ============================================================
@@ -268,15 +298,34 @@ async function handleEmailSubmit(e) {
   setTab(activeTab);
 
   if (result.error) {
-    showAuthError(result.error.message);
+    const msg = result.error.message;
+    // Surface friendly messages for known error types
+    if (msg.toLowerCase().includes('email not confirmed')) {
+      showAuthError('Please confirm your email address before signing in.');
+    } else if (msg.toLowerCase().includes('invalid login credentials')) {
+      showAuthError('Incorrect email or password.');
+    } else {
+      showAuthError(msg);
+    }
     return;
   }
 
   closeModal();
+
+  if (activeTab === 'signup') {
+    showToast('Check your inbox', {
+      message: 'We sent you a confirmation email. Click the link to activate your account.',
+      type: 'info',
+      duration: 7000,
+    });
+  } else {
+    showToast('Welcome back!', { type: 'success' });
+  }
 }
 
 async function handleSignOut() {
   await signOut();
+  showToast('Signed out', { message: 'Your tasks are safe. Sign in anytime to return.', type: 'info' });
 }
 
 // ============================================================
