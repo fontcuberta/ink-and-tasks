@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ink & Tasks</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:ital,wght@0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="site-header">
+      <div class="header-ornament header-ornament--left" aria-hidden="true">
+        <svg viewBox="0 0 160 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M155 40 C120 10, 80 5, 40 20 C20 28, 5 38, 5 40" stroke="currentColor" stroke-width="0.8" fill="none"/>
+          <path d="M130 25 C110 12, 85 8, 60 18" stroke="currentColor" stroke-width="0.6" fill="none"/>
+          <path d="M140 52 C115 62, 80 65, 45 55" stroke="currentColor" stroke-width="0.6" fill="none"/>
+          <circle cx="18" cy="38" r="2.5" stroke="currentColor" stroke-width="0.7" fill="none"/>
+          <circle cx="12" cy="42" r="1.5" stroke="currentColor" stroke-width="0.6" fill="none"/>
+          <path d="M55 15 Q58 8, 62 14 Q65 8, 68 15" stroke="currentColor" stroke-width="0.7" fill="none"/>
+          <path d="M85 6 Q88 0, 91 7" stroke="currentColor" stroke-width="0.7" fill="none"/>
+          <path d="M40 20 Q42 12, 46 20" stroke="currentColor" stroke-width="0.6" fill="none"/>
+          <path d="M100 10 L100 22 M95 16 L105 16" stroke="currentColor" stroke-width="0.6"/>
+          <ellipse cx="30" cy="50" rx="4" ry="7" stroke="currentColor" stroke-width="0.6" fill="none" transform="rotate(-20 30 50)"/>
+          <path d="M30 43 L30 28" stroke="currentColor" stroke-width="0.5"/>
+        </svg>
+      </div>
+
+      <div class="header-content">
+        <h1 class="site-title">Ink &amp; Tasks</h1>
+        <p class="site-subtitle">Your creative canvas</p>
+      </div>
+
+      <div class="header-ornament header-ornament--right" aria-hidden="true">
+        <svg viewBox="0 0 160 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="transform: scaleX(-1)">
+          <path d="M155 40 C120 10, 80 5, 40 20 C20 28, 5 38, 5 40" stroke="currentColor" stroke-width="0.8" fill="none"/>
+          <path d="M130 25 C110 12, 85 8, 60 18" stroke="currentColor" stroke-width="0.6" fill="none"/>
+          <path d="M140 52 C115 62, 80 65, 45 55" stroke="currentColor" stroke-width="0.6" fill="none"/>
+          <circle cx="18" cy="38" r="2.5" stroke="currentColor" stroke-width="0.7" fill="none"/>
+          <circle cx="12" cy="42" r="1.5" stroke="currentColor" stroke-width="0.6" fill="none"/>
+          <path d="M55 15 Q58 8, 62 14 Q65 8, 68 15" stroke="currentColor" stroke-width="0.7" fill="none"/>
+          <path d="M85 6 Q88 0, 91 7" stroke="currentColor" stroke-width="0.7" fill="none"/>
+          <path d="M40 20 Q42 12, 46 20" stroke="currentColor" stroke-width="0.6" fill="none"/>
+          <path d="M100 10 L100 22 M95 16 L105 16" stroke="currentColor" stroke-width="0.6"/>
+          <ellipse cx="30" cy="50" rx="4" ry="7" stroke="currentColor" stroke-width="0.6" fill="none" transform="rotate(-20 30 50)"/>
+          <path d="M30 43 L30 28" stroke="currentColor" stroke-width="0.5"/>
+        </svg>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="main-content">
+
+      <!-- Add task form -->
+      <section class="add-section">
+        <h2 class="section-heading">New Task</h2>
+        <form id="add-form" class="add-form" novalidate>
+          <div class="form-row form-row--main">
+            <input
+              type="text"
+              id="task-input"
+              class="input input--text"
+              placeholder="What needs to be done?"
+              autocomplete="off"
+              required
+            />
+          </div>
+          <div class="form-row form-row--meta">
+            <div class="form-field">
+              <label class="form-label" for="due-date-input">
+                <i class="ph-thin ph-calendar-blank"></i> Due date
+              </label>
+              <input type="date" id="due-date-input" class="input input--date" />
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="priority-input">
+                <i class="ph-thin ph-flag"></i> Priority
+              </label>
+              <select id="priority-input" class="input input--select">
+                <option value="">None</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field form-field--full">
+              <label class="form-label" for="notes-input">
+                <i class="ph-thin ph-note"></i> Notes
+              </label>
+              <textarea
+                id="notes-input"
+                class="input input--textarea"
+                placeholder="Any additional details..."
+                rows="2"
+              ></textarea>
+            </div>
+          </div>
+          <div class="form-row form-row--actions">
+            <button type="submit" class="btn btn--primary">
+              <i class="ph-thin ph-plus"></i>
+              Add Task
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- Task list -->
+      <section class="tasks-section">
+        <div class="tasks-header">
+          <h2 class="section-heading">Tasks</h2>
+          <span id="task-count" class="task-count"></span>
+        </div>
+
+        <!-- Empty state -->
+        <div id="empty-state" class="empty-state" hidden>
+          <svg class="empty-illustration" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Ink bottle -->
+            <rect x="172" y="160" width="56" height="70" rx="6" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <rect x="182" y="148" width="36" height="16" rx="4" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <rect x="194" y="136" width="12" height="14" rx="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <path d="M172 195 Q200 188, 228 195" stroke="currentColor" stroke-width="1" fill="none" opacity="0.5"/>
+            <ellipse cx="200" cy="215" rx="18" ry="8" fill="currentColor" opacity="0.08"/>
+            <!-- Quill -->
+            <path d="M240 100 C260 80, 290 70, 310 85 C295 95, 275 105, 255 125 C245 135, 238 148, 235 160 C230 148, 228 132, 232 118 Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+            <path d="M310 85 C300 100, 280 115, 255 125" stroke="currentColor" stroke-width="0.8" fill="none" opacity="0.6"/>
+            <path d="M235 160 L228 185" stroke="currentColor" stroke-width="1" fill="none"/>
+            <!-- Small botanicals -->
+            <path d="M80 220 Q85 200, 90 220" stroke="currentColor" stroke-width="1" fill="none"/>
+            <path d="M85 200 L85 180 M80 188 Q85 178, 90 188" stroke="currentColor" stroke-width="0.8" fill="none"/>
+            <path d="M320 230 Q325 210, 330 230" stroke="currentColor" stroke-width="1" fill="none"/>
+            <path d="M325 210 L325 190 M320 198 Q325 188, 330 198" stroke="currentColor" stroke-width="0.8" fill="none"/>
+            <!-- Dots -->
+            <circle cx="120" cy="170" r="2" fill="currentColor" opacity="0.3"/>
+            <circle cx="140" cy="190" r="1.5" fill="currentColor" opacity="0.2"/>
+            <circle cx="270" cy="175" r="2" fill="currentColor" opacity="0.3"/>
+            <circle cx="255" cy="195" r="1.5" fill="currentColor" opacity="0.2"/>
+          </svg>
+          <p class="empty-title">Your canvas is empty.</p>
+          <p class="empty-subtitle">Add your first task above to begin.</p>
+        </div>
+
+        <ul id="todo-list" class="todo-list"></ul>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>Ink &amp; Tasks &mdash; made for creative minds</p>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
