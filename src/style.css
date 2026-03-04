@@ -17,6 +17,19 @@
   --color-success:   #4a7c5f;
   --color-success-dim: rgba(74, 124, 95, 0.15);
 
+  /* Extended palette — badge, overdue, error text, hover states */
+  --color-gold-hover:            #d9b85c;
+  --color-header-dark:           #141008;
+  --color-danger-text:           #d97070;
+  --color-danger-text-dim:       rgba(217, 112, 112, 0.08);
+  --color-danger-text-border:    rgba(217, 112, 112, 0.2);
+  --color-danger-badge-border:   rgba(217, 112, 112, 0.35);
+  --color-success-text:          #6aab84;
+  --color-success-badge-border:  rgba(106, 171, 132, 0.35);
+  --color-success-badge-bg:      rgba(106, 171, 132, 0.08);
+  --color-gold-badge-border:     rgba(201, 168, 76, 0.35);
+  --color-gold-badge-bg:         rgba(201, 168, 76, 0.08);
+
   --font-display: 'Cinzel Decorative', serif;
   --font-heading: 'Cormorant Garamond', serif;
   --font-body:    'DM Sans', sans-serif;
@@ -57,6 +70,21 @@ body {
 }
 
 /* ============================================================
+   ACCESSIBILITY UTILITIES
+   ============================================================ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ============================================================
    SCROLLBAR
    ============================================================ */
 ::-webkit-scrollbar {
@@ -78,23 +106,36 @@ body {
    ============================================================ */
 .site-header {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2.5rem 2rem 2rem;
+  padding: 1.8rem 1.5rem;
   border-bottom: 1px solid var(--color-border);
-  background: linear-gradient(180deg, #141008 0%, var(--color-bg) 100%);
+  background: linear-gradient(180deg, var(--color-header-dark) 0%, var(--color-bg) 100%);
   overflow: hidden;
 }
 
-.header-content {
-  text-align: center;
+/* 3-column flex row sits on top of the decorative ornaments */
+.header-inner {
+  position: relative;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* Left spacer mirrors the auth area so the title stays centred */
+.header-spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-content {
+  flex: 0 0 auto;
+  text-align: center;
 }
 
 .site-title {
   font-family: var(--font-display);
-  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  font-size: clamp(1.4rem, 4vw, 2.4rem);
   font-weight: 700;
   color: var(--color-gold);
   letter-spacing: 0.04em;
@@ -119,18 +160,18 @@ body {
   color: var(--color-gold);
   opacity: 0.12;
   pointer-events: none;
+  z-index: 0;
 }
-.header-ornament--left  { left: 1rem; }
-.header-ornament--right { right: 1rem; }
+.header-ornament--left  { left: 0; }
+.header-ornament--right { right: 0; }
 
-/* Header auth button */
+/* Header auth area — flex child, always visible */
 .header-auth {
-  position: absolute;
-  top: 1rem;
-  right: 1.2rem;
-  z-index: 2;
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.6rem;
 }
 
@@ -346,7 +387,7 @@ body {
 }
 
 .btn--primary:hover {
-  background: #d9b85c;
+  background: var(--color-gold-hover);
   box-shadow: var(--shadow-gold);
   transform: translateY(-1px);
 }
@@ -533,21 +574,21 @@ body {
 }
 
 .badge--high {
-  color: #d97070;
-  border-color: rgba(217, 112, 112, 0.35);
-  background: rgba(217, 112, 112, 0.08);
+  color: var(--color-danger-text);
+  border-color: var(--color-danger-badge-border);
+  background: var(--color-danger-text-dim);
 }
 
 .badge--medium {
-  color: #c9a84c;
-  border-color: rgba(201, 168, 76, 0.35);
-  background: rgba(201, 168, 76, 0.08);
+  color: var(--color-gold);
+  border-color: var(--color-gold-badge-border);
+  background: var(--color-gold-badge-bg);
 }
 
 .badge--low {
-  color: #6aab84;
-  border-color: rgba(106, 171, 132, 0.35);
-  background: rgba(106, 171, 132, 0.08);
+  color: var(--color-success-text);
+  border-color: var(--color-success-badge-border);
+  background: var(--color-success-badge-bg);
 }
 
 /* Due date */
@@ -560,7 +601,7 @@ body {
 }
 
 .todo-due.overdue {
-  color: #d97070;
+  color: var(--color-danger-text);
 }
 
 /* Delete button */
@@ -810,9 +851,9 @@ body {
 
 .auth-error {
   font-size: 0.82rem;
-  color: #d97070;
-  background: rgba(217, 112, 112, 0.08);
-  border: 1px solid rgba(217, 112, 112, 0.2);
+  color: var(--color-danger-text);
+  background: var(--color-danger-text-dim);
+  border: 1px solid var(--color-danger-text-border);
   border-radius: var(--radius-sm);
   padding: 0.5rem 0.75rem;
 }
@@ -838,7 +879,7 @@ body {
 }
 
 .auth-toggle__btn:hover {
-  color: #d9b85c;
+  color: var(--color-gold-hover);
 }
 
 /* ============================================================
@@ -861,20 +902,27 @@ body {
 }
 
 .btn--signout {
-  background: none;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
   color: var(--color-muted);
   font-family: var(--font-body);
-  font-size: 0.78rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.35rem 0.9rem;
   cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  transition: color var(--transition);
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
+  white-space: nowrap;
+  text-decoration: none;
 }
 
 .btn--signout:hover {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
+  border-color: var(--color-danger-text);
+  background: var(--color-danger-text-dim);
 }
 
 /* ============================================================
@@ -929,8 +977,8 @@ body {
   margin-top: 1px;
 }
 
-.toast--success .toast__icon { color: #6aab84; }
-.toast--error   .toast__icon { color: #d97070; }
+.toast--success .toast__icon { color: var(--color-success-text); }
+.toast--error   .toast__icon { color: var(--color-danger-text); }
 .toast--info    .toast__icon { color: var(--color-gold); }
 
 .toast__body {

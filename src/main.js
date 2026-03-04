@@ -127,8 +127,8 @@ function renderTasks(tasks) {
     li.dataset.id = task.id;
 
     const priorityBadge = task.priority
-      ? `<span class="badge badge--${task.priority}">
-           <i class="ph-thin ph-flag"></i>${task.priority}
+      ? `<span class="badge badge--${escapeHtml(task.priority)}">
+           <i class="ph-thin ph-flag"></i>${escapeHtml(task.priority)}
          </span>`
       : '';
 
@@ -189,7 +189,10 @@ function renderAuthUI(user) {
       <div class="header-user">
         <i class="ph-thin ph-user-circle"></i>
         <span class="header-user__email">${escapeHtml(email)}</span>
-        <button class="btn--signout" id="header-signout-btn">Sign out</button>
+        <button class="btn--signout" id="header-signout-btn">
+          <i class="ph-thin ph-sign-out"></i>
+          Sign out
+        </button>
       </div>
     `;
     document.getElementById('header-signout-btn')?.addEventListener('click', handleSignOut);
@@ -220,7 +223,11 @@ async function loadTasks() {
     .select('*')
     .order('created_at', { ascending: true });
 
-  if (error) { console.error('[Ink & Tasks]', error.message); return; }
+  if (error) {
+    console.error('[Ink & Tasks]', error.message);
+    showToast('Could not load tasks', { message: error.message, type: 'error' });
+    return;
+  }
   renderTasks(data ?? []);
 }
 
@@ -234,7 +241,11 @@ async function addTask({ text, dueDate, priority, notes }) {
     user_id:   currentUser?.id ?? null,
   });
 
-  if (error) { console.error('[Ink & Tasks]', error.message); return; }
+  if (error) {
+    console.error('[Ink & Tasks]', error.message);
+    showToast('Could not add task', { message: error.message, type: 'error' });
+    return;
+  }
   await loadTasks();
 }
 
@@ -244,7 +255,11 @@ async function completeTask(id, currentValue) {
     .update({ completed: !currentValue })
     .eq('id', id);
 
-  if (error) { console.error('[Ink & Tasks]', error.message); return; }
+  if (error) {
+    console.error('[Ink & Tasks]', error.message);
+    showToast('Could not update task', { message: error.message, type: 'error' });
+    return;
+  }
   await loadTasks();
 }
 
@@ -254,7 +269,11 @@ async function deleteTask(id) {
     .delete()
     .eq('id', id);
 
-  if (error) { console.error('[Ink & Tasks]', error.message); return; }
+  if (error) {
+    console.error('[Ink & Tasks]', error.message);
+    showToast('Could not delete task', { message: error.message, type: 'error' });
+    return;
+  }
   await loadTasks();
 }
 
@@ -264,9 +283,24 @@ async function deleteTask(id) {
 
 let activeTab = 'signup';
 
+function trapFocus(e) {
+  if (e.key !== 'Tab') return;
+  const focusable = Array.from(authOverlay.querySelectorAll(
+    'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  ));
+  const first = focusable[0];
+  const last  = focusable[focusable.length - 1];
+  if (e.shiftKey) {
+    if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+  } else {
+    if (document.activeElement === last)  { e.preventDefault(); first.focus(); }
+  }
+}
+
 function openModal() {
   authOverlay.hidden = false;
   document.body.style.overflow = 'hidden';
+  authOverlay.addEventListener('keydown', trapFocus);
   authEmail.focus();
 }
 
@@ -275,6 +309,7 @@ function closeModal() {
   document.body.style.overflow = '';
   authError.hidden = true;
   authForm.reset();
+  authOverlay.removeEventListener('keydown', trapFocus);
 }
 
 function setTab(tab) {
@@ -371,17 +406,21 @@ addForm.addEventListener('submit', async (e) => {
   const btn = addForm.querySelector('.btn--primary');
   btn.disabled = true;
 
-  await addTask({
-    text,
-    dueDate:  dueDateInput.value      || null,
-    priority: priorityInput.value     || null,
-    notes:    notesInput.value.trim() || null,
-  });
-
-  addForm.reset();
-  btn.disabled = false;
-  taskInput.focus();
+  try {
+    await addTask({
+      text,
+      dueDate:  dueDateInput.value      || null,
+      priority: priorityInput.value     || null,
+      notes:    notesInput.value.trim() || null,
+    });
+    addForm.reset();
+    taskInput.focus();
+  } finally {
+    btn.disabled = false;
+  }
 });
+
+const inFlightIds = new Set();
 
 todoList.addEventListener('click', async (e) => {
   const item   = e.target.closest('.todo-item');
@@ -389,8 +428,22 @@ todoList.addEventListener('click', async (e) => {
   if (!item || !action) return;
 
   const id = item.dataset.id;
-  if (action === 'complete') await completeTask(id, item.classList.contains('completed'));
-  if (action === 'delete')   await deleteTask(id);
+  if (inFlightIds.has(id)) return;
+
+  inFlightIds.add(id);
+  item.style.opacity       = '0.6';
+  item.style.pointerEvents = 'none';
+
+  try {
+    if (action === 'complete') await completeTask(id, item.classList.contains('completed'));
+    if (action === 'delete')   await deleteTask(id);
+  } finally {
+    inFlightIds.delete(id);
+    if (item.isConnected) {
+      item.style.opacity       = '';
+      item.style.pointerEvents = '';
+    }
+  }
 });
 
 // ============================================================
