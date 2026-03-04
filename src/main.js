@@ -173,10 +173,9 @@ function renderAuthUI(user) {
   const anon = isAnonymous(user);
   const signedIn = user && !anon;
 
-  // Close modal the moment a real (non-anonymous) user is confirmed
-  if (signedIn && !authOverlay.hidden) {
+  // Close modal the moment a real (non-anonymous) user is confirmed (backup)
+  if (signedIn && isModalOpen()) {
     closeModal();
-    showToast('Welcome back!', { type: 'success' });
   }
 
   // Auth bar — secondary nudge, only for anonymous users
@@ -297,15 +296,19 @@ function trapFocus(e) {
   }
 }
 
+function isModalOpen() {
+  return authOverlay.classList.contains('is-open');
+}
+
 function openModal() {
-  authOverlay.hidden = false;
+  authOverlay.classList.add('is-open');
   document.body.style.overflow = 'hidden';
   authOverlay.addEventListener('keydown', trapFocus);
   authEmail.focus();
 }
 
 function closeModal() {
-  authOverlay.hidden = true;
+  authOverlay.classList.remove('is-open');
   document.body.style.overflow = '';
   authError.hidden = true;
   authForm.reset();
@@ -377,7 +380,6 @@ async function handleEmailSubmit(e) {
     return;
   }
 
-  // Sign-up: modal stays open so the user sees the confirmation message
   if (activeTab === 'signup') {
     closeModal();
     showToast('Check your inbox', {
@@ -385,8 +387,10 @@ async function handleEmailSubmit(e) {
       type: 'info',
       duration: 7000,
     });
+  } else {
+    closeModal();
+    showToast('Welcome back!', { type: 'success' });
   }
-  // Sign-in: modal closes automatically when onAuthStateChange confirms the session
 }
 
 async function handleSignOut() {
@@ -458,7 +462,7 @@ authToggleBtn.addEventListener('click', () => setTab(activeTab === 'signup' ? 's
 authForm.addEventListener('submit', handleEmailSubmit);
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !authOverlay.hidden) closeModal();
+  if (e.key === 'Escape' && isModalOpen()) closeModal();
 });
 
 // ============================================================
@@ -466,13 +470,23 @@ document.addEventListener('keydown', (e) => {
 // ============================================================
 
 async function init() {
-  const user = await initAuth((updatedUser) => {
-    renderAuthUI(updatedUser);
-    loadTasks();
-  });
+  try {
+    const user = await initAuth((updatedUser) => {
+      renderAuthUI(updatedUser);
+      loadTasks();
+    });
 
-  renderAuthUI(user);
-  await loadTasks();
+    renderAuthUI(user);
+    await loadTasks();
+  } catch (err) {
+    console.error('[Ink & Tasks] Init failed:', err);
+    showToast('Connection issue', {
+      message: 'Could not reach the server. Please refresh the page.',
+      type: 'error',
+      duration: 8000,
+    });
+    renderAuthUI(null);
+  }
 }
 
 init();
