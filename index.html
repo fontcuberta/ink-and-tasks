@@ -36,6 +36,10 @@
         <p class="site-subtitle">Your creative canvas</p>
       </div>
 
+      <div class="header-auth" id="header-auth">
+        <!-- Populated by JS based on auth state -->
+      </div>
+
       <div class="header-ornament header-ornament--right" aria-hidden="true">
         <svg viewBox="0 0 160 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="transform: scaleX(-1)">
           <path d="M155 40 C120 10, 80 5, 40 20 C20 28, 5 38, 5 40" stroke="currentColor" stroke-width="0.8" fill="none"/>
@@ -195,6 +199,10 @@
           <button type="submit" class="btn btn--primary btn--full" id="auth-submit-btn">
             Create account
           </button>
+          <p class="auth-toggle">
+            <span id="auth-toggle-text">Already have an account?</span>
+            <button type="button" class="auth-toggle__btn" id="auth-toggle-btn">Sign in</button>
+          </p>
         </form>
       </div>
     </div>

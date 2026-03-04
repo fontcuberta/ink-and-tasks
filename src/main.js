@@ -37,6 +37,9 @@ const authSubmitBtn = document.getElementById('auth-submit-btn');
 const authError     = document.getElementById('auth-error');
 const authSubtitle  = document.getElementById('auth-subtitle');
 const authStatus       = document.getElementById('auth-status');
+const headerAuth       = document.getElementById('header-auth');
+const authToggleText   = document.getElementById('auth-toggle-text');
+const authToggleBtn    = document.getElementById('auth-toggle-btn');
 const toastContainer   = document.getElementById('toast-container');
 
 // ============================================================
@@ -168,28 +171,43 @@ function renderTasks(tasks) {
 
 function renderAuthUI(user) {
   const anon = isAnonymous(user);
+  const signedIn = user && !anon;
 
   // Close modal the moment a real (non-anonymous) user is confirmed
-  if (user && !anon && !authOverlay.hidden) {
+  if (signedIn && !authOverlay.hidden) {
     closeModal();
     showToast('Welcome back!', { type: 'success' });
   }
 
-  // Auth bar — only show for anonymous users
+  // Auth bar — secondary nudge, only for anonymous users
   authBar.hidden = !anon;
 
-  // Footer auth status
-  if (!user || anon) {
-    authStatus.innerHTML = '';
-  } else {
+  // Header auth area
+  if (signedIn) {
     const email = user.email || user.user_metadata?.full_name || 'Signed in';
-    authStatus.innerHTML = `
-      <i class="ph-thin ph-user-circle"></i>
-      <span class="auth-status__email">${escapeHtml(email)}</span>
-      <button class="btn--signout" id="sign-out-btn">Sign out</button>
+    headerAuth.innerHTML = `
+      <div class="header-user">
+        <i class="ph-thin ph-user-circle"></i>
+        <span class="header-user__email">${escapeHtml(email)}</span>
+        <button class="btn--signout" id="header-signout-btn">Sign out</button>
+      </div>
     `;
-    document.getElementById('sign-out-btn')?.addEventListener('click', handleSignOut);
+    document.getElementById('header-signout-btn')?.addEventListener('click', handleSignOut);
+  } else {
+    headerAuth.innerHTML = `
+      <button class="btn--header-signin" id="header-signin-btn">
+        <i class="ph-thin ph-user"></i>
+        Sign in
+      </button>
+    `;
+    document.getElementById('header-signin-btn')?.addEventListener('click', () => {
+      setTab('signin');
+      openModal();
+    });
   }
+
+  // Footer auth status (keep as secondary indicator)
+  authStatus.innerHTML = '';
 }
 
 // ============================================================
@@ -263,12 +281,20 @@ function setTab(tab) {
   activeTab = tab;
   authTabs.forEach(t => t.classList.toggle('auth-tab--active', t.dataset.tab === tab));
 
+  // Clear state when switching tabs
+  authError.hidden = true;
+  authForm.reset();
+
   if (tab === 'signup') {
     authSubmitBtn.textContent = 'Create account';
     authSubtitle.textContent = 'Save your tasks and access them anywhere.';
+    authToggleText.textContent = 'Already have an account?';
+    authToggleBtn.textContent = 'Sign in';
   } else {
     authSubmitBtn.textContent = 'Sign in';
     authSubtitle.textContent = 'Welcome back. Sign in to see your tasks.';
+    authToggleText.textContent = "Don't have an account?";
+    authToggleBtn.textContent = 'Create one';
   }
 }
 
@@ -375,6 +401,7 @@ authBarBtn.addEventListener('click', () => { setTab('signup'); openModal(); });
 authCloseBtn.addEventListener('click', closeModal);
 authOverlay.addEventListener('click', (e) => { if (e.target === authOverlay) closeModal(); });
 authTabs.forEach(tab => tab.addEventListener('click', () => setTab(tab.dataset.tab)));
+authToggleBtn.addEventListener('click', () => setTab(activeTab === 'signup' ? 'signin' : 'signup'));
 authForm.addEventListener('submit', handleEmailSubmit);
 
 document.addEventListener('keydown', (e) => {

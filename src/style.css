@@ -123,6 +123,56 @@ body {
 .header-ornament--left  { left: 1rem; }
 .header-ornament--right { right: 1rem; }
 
+/* Header auth button */
+.header-auth {
+  position: absolute;
+  top: 1rem;
+  right: 1.2rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.btn--header-signin {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  color: var(--color-muted);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
+  white-space: nowrap;
+}
+
+.btn--header-signin:hover {
+  color: var(--color-cream);
+  border-color: var(--color-muted);
+  background: var(--color-surface-2);
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--color-muted);
+}
+
+.header-user__email {
+  color: var(--color-cream);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ============================================================
    MAIN LAYOUT
    ============================================================ */
@@ -765,6 +815,30 @@ body {
   border: 1px solid rgba(217, 112, 112, 0.2);
   border-radius: var(--radius-sm);
   padding: 0.5rem 0.75rem;
+}
+
+.auth-toggle {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--color-muted);
+  margin-top: 0.25rem;
+}
+
+.auth-toggle__btn {
+  background: none;
+  border: none;
+  color: var(--color-gold);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 0 0.2rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color var(--transition);
+}
+
+.auth-toggle__btn:hover {
+  color: #d9b85c;
 }
 
 /* ============================================================
