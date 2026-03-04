@@ -113,12 +113,12 @@ function renderTasks(tasks) {
   const total     = tasks.length;
 
   if (total === 0) {
-    emptyState.hidden = false;
+    emptyState.classList.add('is-visible');
     taskCount.textContent = '';
     return;
   }
 
-  emptyState.hidden = true;
+  emptyState.classList.remove('is-visible');
   taskCount.textContent = `${remaining} of ${total} remaining`;
 
   tasks.forEach(task => {
@@ -179,7 +179,7 @@ function renderAuthUI(user) {
   }
 
   // Auth bar — secondary nudge, only for anonymous users
-  authBar.hidden = !anon;
+  authBar.classList.toggle('is-visible', anon);
 
   // Header auth area
   if (signedIn) {

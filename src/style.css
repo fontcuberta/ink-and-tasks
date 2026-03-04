@@ -433,11 +433,15 @@ body {
    EMPTY STATE
    ============================================================ */
 .empty-state {
-  display: flex;
+  display: none;
   flex-direction: column;
   align-items: center;
   padding: 3.5rem 1rem;
   text-align: center;
+}
+
+.empty-state.is-visible {
+  display: flex;
 }
 
 .empty-illustration {
@@ -654,7 +658,7 @@ body {
    AUTH BAR
    ============================================================ */
 .auth-bar {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
@@ -664,6 +668,10 @@ body {
   border-bottom: 1px solid var(--color-gold-dim);
   font-size: 0.85rem;
   color: var(--color-muted);
+}
+
+.auth-bar.is-visible {
+  display: flex;
 }
 
 .auth-bar i {
