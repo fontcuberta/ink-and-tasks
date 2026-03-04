@@ -1,0 +1,54 @@
+import { ref } from 'vue';
+import { supabase } from '../supabase.js';
+import { useAuth } from './useAuth.js';
+
+const events = ref([]);
+const loading = ref(false);
+
+export function useCalendar() {
+  const { user } = useAuth();
+
+  async function load() {
+    loading.value = true;
+    const { data, error } = await supabase
+      .from('calendar_events')
+      .select('*, projects(client_name, style)')
+      .order('start_time', { ascending: true });
+
+    if (error) {
+      console.error('[Calendar]', error.message);
+      return { error };
+    }
+    events.value = data ?? [];
+    loading.value = false;
+    return { data };
+  }
+
+  async function create(event) {
+    const { data, error } = await supabase.from('calendar_events').insert({
+      ...event,
+      user_id: user.value?.id,
+    }).select().single();
+
+    if (!error) await load();
+    return { data, error };
+  }
+
+  async function update(id, changes) {
+    const { error } = await supabase
+      .from('calendar_events')
+      .update(changes)
+      .eq('id', id);
+
+    if (!error) await load();
+    return { error };
+  }
+
+  async function remove(id) {
+    const { error } = await supabase.from('calendar_events').delete().eq('id', id);
+    if (!error) await load();
+    return { error };
+  }
+
+  return { events, loading, load, create, update, remove };
+}

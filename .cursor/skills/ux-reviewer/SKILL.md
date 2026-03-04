@@ -1,11 +1,11 @@
 ---
 name: ux-reviewer
-description: Reviews the Ink & Tasks app for UX quality across accessibility, interaction flows, visual consistency, UX copy, and live browser behaviour. Use when the user asks for a UX review, UX audit, UX check, wants to validate good practices, or asks what can be improved from a user experience perspective.
+description: Reviews the Ink & Tasks tattoo artist management app for UX quality across accessibility, interaction flows, visual consistency, UX copy, and live browser behaviour. Use when the user asks for a UX review, UX audit, UX check, wants to validate good practices, or asks what can be improved from a user experience perspective.
 ---
 
-# UX Reviewer — Ink & Tasks
+# UX Reviewer — Ink & Tasks v2
 
-Performs a structured UX audit of the Ink & Tasks todo app. Covers 5 domains and outputs prioritised findings.
+Performs a structured UX audit of the Ink & Tasks tattoo artist management app. Covers 5 domains and outputs prioritised findings.
 
 ## How to run a review
 
@@ -18,9 +18,11 @@ Performs a structured UX audit of the Ink & Tasks todo app. Covers 5 domains and
 
 ## App context
 
-- Stack: Vite (vanilla JS), Supabase, Netlify
-- Design system: dark Art Nouveau "Ink & Paper" theme
-- Key flows: add task → complete → delete | anonymous sign-in → create account → sign in → sign out
+- Stack: Vue 3 (Composition API) + Vite, Supabase (PostgreSQL + Auth + Storage), Netlify
+- Design system: dark Art Nouveau "Ink & Paper" theme with CSS custom properties
+- Key views: Kanban Board, Calendar, Consent Forms
+- Key flows: add project -> move through pipeline -> book appointment -> sign consent -> done
+- Auth: anonymous sign-in -> create account -> sign in -> sign out
 - Live URL: https://inkandtasks.netlify.app
 - Local: http://localhost:5173 (or nearest available port)
 
@@ -30,18 +32,48 @@ Performs a structured UX audit of the Ink & Tasks todo app. Covers 5 domains and
 
 Run these in the browser-use subagent:
 
-1. **Empty state** — load the app, confirm empty state illustration and copy appear
-2. **Add task** — fill in text only, submit; then fill all fields (text + due date + priority + notes), submit
-3. **Complete task** — click the checkbox on a task; verify visual change
-4. **Delete task** — click the trash icon; verify removal
-5. **Overdue task** — add a task with a past due date; verify overdue badge appears
-6. **Auth bar** — if anonymous session loads, verify "Save your tasks" bar appears
-7. **Open auth modal** — click "Sign in" in the header; verify modal opens on Sign in tab
-8. **Switch tabs** — click "Create account" tab and toggle link; verify form clears between tabs
-9. **Sign in error** — submit invalid credentials; verify friendly error message
-10. **Close modal** — press Escape, click outside, click X; all should close
-11. **Responsive** — resize to 375px wide; verify layout holds
-12. **Toast** — trigger a sign-out; verify toast appears and auto-dismisses
+### Kanban Board
+
+1. **Empty board** — load the app, confirm empty state appears with clear call-to-action
+2. **Quick-add project** — use the floating "+" button, enter client name + reference photo; confirm card appears in Inbox column
+3. **Full project creation** — open detail form, fill all fields (name, email, phone, description, placement, size, style, budget); confirm card renders with reference image and style badge
+4. **Drag and drop** — drag a card from Inbox to Awaiting Deposit; confirm status updates and card moves
+5. **Move through pipeline** — advance a card through all 5 columns to Done & Healing
+6. **Image upload** — upload a reference image via drag-and-drop and via file picker; confirm thumbnail renders on card
+7. **Project detail modal** — click a card; confirm all fields display correctly; edit a field and save
+8. **Color-coded badges** — create projects with different styles; verify correct badge colours
+
+### Calendar
+
+9. **Empty calendar** — navigate to Calendar view; confirm it loads with current date highlighted
+10. **Create tattoo session** — click/drag to create an event, set type to Tattoo Session; confirm it appears in gold
+11. **Create drawing block** — create a Drawing Block event; confirm it appears in blue-green
+12. **Link to project** — create a tattoo session linked to a Kanban project; confirm client name shows on event
+13. **Time-boxing** — create drawing-only and tattoo-only blocks on different days
+14. **Day/week/month views** — switch between views; confirm events persist across all three
+
+### Consent Forms
+
+15. **New consent form** — navigate to Consent view; start a new form
+16. **Fill form** — complete all fields (client name, DOB, allergies, medical conditions, acknowledgements)
+17. **Draw signature** — use the signature pad canvas; confirm stroke appears
+18. **Link to project** — select a project; confirm client name auto-fills
+19. **Save and view** — submit the form; confirm it appears in the consent list; open it and verify all data
+
+### Auth (unchanged from v1)
+
+20. **Auth bar** — if anonymous session loads, verify "Save your tasks" bar appears
+21. **Open auth modal** — click "Sign in" in the header; verify modal opens on Sign in tab
+22. **Switch tabs** — click "Create account" tab and toggle link; verify form clears between tabs
+23. **Sign in** — enter valid credentials; confirm modal closes, toast appears, header shows email + sign out
+24. **Sign out** — click sign out; confirm toast appears, auth bar reappears
+25. **Close modal** — press Escape, click outside, click X; all should close
+
+### Cross-cutting
+
+26. **Responsive** — resize to 375px wide; verify all three views hold layout
+27. **Toast notifications** — trigger success and error states; verify toasts appear and auto-dismiss
+28. **Gamification** — move a card to Done; verify confetti or celebration animation
 
 ---
 
@@ -49,64 +81,61 @@ Run these in the browser-use subagent:
 
 ### 1. Accessibility
 
-- [ ] All interactive elements are reachable by Tab key in logical order
-- [ ] Buttons have descriptive `aria-label` or visible text (not icon-only without label)
+- [ ] All interactive elements reachable by Tab key in logical order
+- [ ] Buttons have descriptive `aria-label` or visible text
 - [ ] Form inputs have associated `<label>` elements
-- [ ] Color contrast meets WCAG AA (4.5:1 for text, 3:1 for UI components) — gold on dark bg
-- [ ] Modal has `role="dialog"` and `aria-modal="true"` (already set — verify it traps focus)
-- [ ] Error messages are announced to screen readers (`aria-live` or `role="alert"`)
-- [ ] Empty state is not announced as an error
-- [ ] Images/SVGs that are decorative have `aria-hidden="true"`
+- [ ] Color contrast meets WCAG AA (4.5:1 text, 3:1 UI)
+- [ ] Modal has `role="dialog"`, `aria-modal="true"`, and traps focus
+- [ ] Error messages announced to screen readers (`role="alert"` or `aria-live`)
+- [ ] Decorative SVGs/images have `aria-hidden="true"`
+- [ ] Drag-and-drop cards have keyboard alternative and ARIA drag attributes
+- [ ] Calendar events are keyboard-navigable
+- [ ] Signature canvas has a keyboard/text alternative for accessibility
 
 ### 2. Interaction flows
 
-- [ ] Add form: submitting empty text does not add a task; input receives focus
-- [ ] Add form: resets after successful submission
-- [ ] Add form: submit button disables during async call to prevent double-submit
-- [ ] Task complete: immediate visual feedback (no lag)
-- [ ] Task delete: no confirmation dialog (fast) — acceptable for low-stakes action
-- [ ] Auth modal: opens on correct tab depending on entry point (header → Sign in, auth bar → Create account)
-- [ ] Auth modal: switching tabs clears both fields and error message
-- [ ] Auth modal: "Please wait…" state on submit button during async call
-- [ ] Auth modal: closes automatically on successful sign-in (via onAuthStateChange)
-- [ ] Sign-out: returns to anonymous session, auth bar reappears, tasks clear
-- [ ] Toast: appears for key events (sign-in, sign-out, sign-up confirmation)
-- [ ] Toast: auto-dismisses; does not block interaction while visible
-- [ ] Overdue badge: only appears on incomplete tasks
+- [ ] Quick-add: two taps max to create a project (name + photo)
+- [ ] Drag-and-drop: smooth, no visual glitch, updates persist to database
+- [ ] Project detail: opens on card click, all fields editable, saves on blur or explicit save
+- [ ] Calendar: click/drag to create events, type picker appears, saves correctly
+- [ ] Consent form: all fields validate, signature captures touch input, form submits and stores
+- [ ] Image upload: drag-and-drop and file picker both work, preview shows immediately
+- [ ] Auth modal: opens on correct tab, clears between tabs, closes on success
+- [ ] Loading states: visible spinner or skeleton during async operations
+- [ ] Error states: user-visible feedback on every failure (no silent errors)
+- [ ] Double-action guard: rapid clicks don't create duplicate records
 
 ### 3. Visual consistency
 
 - [ ] All text uses the three defined fonts (Cinzel Decorative / Cormorant Garamond / DM Sans)
-- [ ] All colours are CSS custom properties (no hardcoded hex values outside `:root`)
-- [ ] Task cards have consistent left gold border
-- [ ] Priority badges use correct colour variants (high=red, medium=gold, low=green)
-- [ ] Completed tasks are visually distinct (strikethrough + reduced opacity)
-- [ ] Auth modal border-top is gold accent
-- [ ] Toasts use correct colour variant per type (success=green, error=red, info=gold)
-- [ ] Header ornaments are decorative and do not compete with the title at any viewport
-- [ ] Responsive: on mobile (<480px) ornaments hide, form stacks correctly, toasts go full-width
+- [ ] All colours are CSS custom properties (no hardcoded hex outside `:root`)
+- [ ] Kanban columns have distinct visual identity while maintaining cohesion
+- [ ] Style badges use correct colour variants (Traditional=red, Fineline=black, etc.)
+- [ ] Cards in Done column are visually de-emphasized
+- [ ] Calendar event types use distinct, consistent colours (gold, blue-green, muted)
+- [ ] Toasts use correct colour per type (success=green, error=red, info=gold)
+- [ ] Navigation clearly indicates the current view
+- [ ] Responsive: on mobile (<480px) layout adapts, no horizontal overflow
 
 ### 4. UX copy
 
-- [ ] Empty state: *"Your canvas is empty."* — on-brand, not generic "No items"
-- [ ] Add button: "Add Task" — clear verb + noun
-- [ ] Complete aria-label: *"Mark complete"* / *"Mark incomplete"* — contextual
-- [ ] Delete aria-label: *"Delete task"* — clear
-- [ ] Auth bar: *"Your tasks are temporary — save them to your account"* — explains consequence
-- [ ] Auth modal subtitle changes per tab (sign-up vs sign-in context)
-- [ ] Toggle link updates contextually: *"Already have an account? Sign in"* / *"Don't have an account? Create one"*
-- [ ] Error messages: friendly and actionable (not raw Supabase errors)
-- [ ] Toast copy: concise, reassuring tone consistent with brand
-- [ ] Priority badge labels: lowercase (high / medium / low) — consistent with badge design
+- [ ] Empty states: on-brand, not generic (per view: board, calendar, consent)
+- [ ] Column headers: clear pipeline stage names
+- [ ] Button labels: clear verb + noun ("Add Project", "Book Session", "Sign Form")
+- [ ] Error messages: friendly, actionable, not raw database errors
+- [ ] Toast copy: concise, reassuring, consistent brand tone
+- [ ] Form labels: descriptive, with helpful placeholders
+- [ ] Confirmation messages: acknowledge user action, explain next step
 
 ### 5. Live browser testing (browser-use)
 
 Use the browser-use subagent to:
 
+- Screenshot the Kanban board with cards in multiple columns
+- Screenshot the Calendar in week view with mixed event types
+- Screenshot a consent form mid-completion with signature
 - Screenshot the app at 1280px and 375px widths
 - Screenshot the auth modal open state
-- Screenshot a populated task list with mixed priorities and one overdue task
-- Screenshot the toast in its visible state
 - Capture any console errors or network failures
 
 ---
@@ -114,24 +143,25 @@ Use the browser-use subagent to:
 ## Findings report template
 
 ```
-## UX Audit — Ink & Tasks
+## UX Audit — Ink & Tasks v2
 Date: [date]
 Environment: [local / Netlify URL]
 
 ### Summary
-[1–2 sentence overview]
+[1-2 sentence overview]
 
 ### Findings
 
-🔴 Critical — [count] issues (broken flows, inaccessible, confusing)
-🟡 Suggestion — [count] issues (friction, inconsistency, unclear copy)
-🟢 Nice to have — [count] issues (polish, delight, minor improvements)
+Critical — [count] issues (broken flows, inaccessible, confusing)
+Suggestion — [count] issues (friction, inconsistency, unclear copy)
+Nice to have — [count] issues (polish, delight, minor improvements)
 
 ---
 
 #### [Finding title]
-Severity: 🔴 / 🟡 / 🟢
+Severity: Critical / Suggestion / Nice to have
 Domain: Accessibility / Interaction / Visual / Copy / Browser
+View: Board / Calendar / Consent / Auth / Global
 Steps to reproduce: [or "N/A — visual issue"]
 Observed: [what happens]
 Expected: [what should happen]
@@ -143,15 +173,3 @@ Suggested fix: [concrete code or copy change]
 - [positive finding]
 - [positive finding]
 ```
-
----
-
-## Quick checks (run without browser)
-
-Read the source files and check:
-
-- `index.html` — all `<input>` have `id` + matching `<label for="">` and `autocomplete`
-- `index.html` — all icon-only buttons have `aria-label`
-- `src/style.css` — no hardcoded colours outside `:root`
-- `src/main.js` — all error paths surface a user-visible message (no silent failures)
-- `src/main.js` — `escapeHtml()` is called on all user-generated content before innerHTML

@@ -60,3 +60,17 @@ In the Netlify dashboard, set the following environment variables under **Site c
 |---|---|
 | `VITE_SUPABASE_URL` | Your Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | Your Supabase anon public key |
+
+## Agent Skills
+
+The project includes five specialized AI agent skills under `.cursor/skills/` that audit and test different layers of the app:
+
+| Skill | What it does |
+|---|---|
+| `ux-reviewer` | Full UX audit across accessibility, interaction flows, visual consistency, and copy |
+| `db-auditor` | Reviews Supabase schema, RLS policies, storage rules, and frontend query patterns |
+| `a11y-tester` | Focused WCAG 2.2 AA accessibility audit with criterion references |
+| `adhd-ux-specialist` | Evaluates cognitive load, friction scores, object permanence, and dopamine design |
+| `vue-reviewer` | Reviews Vue component quality, reactivity, composables, and style isolation |
+
+You can invoke any of them by asking things like "run a database audit", "check accessibility", "how ADHD-friendly is this?", or "review my Vue components." When you're ready to orchestrate them later (e.g., a "pre-deploy" meta-skill that runs all five in sequence), the consistent report format will make it easy to aggregate findings.
