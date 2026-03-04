@@ -169,6 +169,12 @@ function renderTasks(tasks) {
 function renderAuthUI(user) {
   const anon = isAnonymous(user);
 
+  // Close modal the moment a real (non-anonymous) user is confirmed
+  if (user && !anon && !authOverlay.hidden) {
+    closeModal();
+    showToast('Welcome back!', { type: 'success' });
+  }
+
   // Auth bar — only show for anonymous users
   authBar.hidden = !anon;
 
@@ -310,17 +316,16 @@ async function handleEmailSubmit(e) {
     return;
   }
 
-  closeModal();
-
+  // Sign-up: modal stays open so the user sees the confirmation message
   if (activeTab === 'signup') {
+    closeModal();
     showToast('Check your inbox', {
       message: 'We sent you a confirmation email. Click the link to activate your account.',
       type: 'info',
       duration: 7000,
     });
-  } else {
-    showToast('Welcome back!', { type: 'success' });
   }
+  // Sign-in: modal closes automatically when onAuthStateChange confirms the session
 }
 
 async function handleSignOut() {
