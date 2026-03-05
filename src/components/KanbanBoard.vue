@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, reactive, watch } from 'vue';
 import draggable from 'vuedraggable';
 import { useProjects } from '../composables/useProjects.js';
 import { useToast } from '../composables/useToast.js';
@@ -34,16 +34,18 @@ const columnIcons = {
   done: 'ph-thin ph-heart',
 };
 
-const columnData = computed(() => {
-  const result = {};
+const columnLists = reactive(
+  Object.fromEntries(COLUMNS.map(col => [col, []]))
+);
+
+watch(() => projects.value, () => {
   for (const col of COLUMNS) {
-    result[col] = byColumn(col);
+    columnLists[col].splice(0, columnLists[col].length, ...byColumn(col));
   }
-  return result;
-});
+}, { immediate: true });
 
 const totalProjects = computed(() => projects.value.length);
-const doneCount = computed(() => columnData.value.done?.length ?? 0);
+const doneCount = computed(() => columnLists.done?.length ?? 0);
 
 function getImageUrl(path) {
   if (!path) return '';
@@ -58,20 +60,21 @@ function primaryImage(project) {
 }
 
 function oldestInColumn(col) {
-  const items = columnData.value[col];
+  const items = columnLists[col];
   if (!items || items.length < 2) return null;
   return items.reduce((oldest, p) =>
     new Date(p.created_at) < new Date(oldest.created_at) ? p : oldest
   ).id;
 }
 
-async function onDragEnd(col, evt) {
-  const item = columnData.value[col][evt.newIndex ?? evt.oldIndex];
-  if (!item) return;
+async function onColumnChange(col, evt) {
+  if (!evt.added) return;
+  const item = evt.added.element;
+  const newIndex = evt.added.newIndex;
 
   playWhoosh();
 
-  const { error } = await moveToColumn(item.id, col, evt.newIndex ?? 0);
+  const { error } = await moveToColumn(item.id, col, newIndex);
   if (error) {
     toast('Move failed', { message: error.message, type: 'error' });
     await load();
@@ -136,27 +139,27 @@ function closeProject() {
           <span class="kanban-column__title">{{ columnLabels[col] }}</span>
           <ProgressRing
             v-if="totalProjects > 0"
-            :value="columnData[col].length"
+            :value="columnLists[col].length"
             :total="totalProjects"
             :size="24"
             :stroke-width="2.5"
             :color="col === 'done' ? 'var(--color-success-text)' : 'var(--color-gold)'"
           />
-          <span class="kanban-column__count">{{ columnData[col].length }}</span>
+          <span class="kanban-column__count">{{ columnLists[col].length }}</span>
         </div>
         <draggable
           class="kanban-column__body"
-          :list="columnData[col]"
+          :list="columnLists[col]"
           group="kanban"
           item-key="id"
           :animation="200"
           ghost-class="kanban-card--ghost"
           drag-class="kanban-card--dragging"
-          @end="(e) => onDragEnd(col, e)"
+          @change="(e) => onColumnChange(col, e)"
         >
           <template #item="{ element }">
             <div
-              :class="['kanban-card', { 'kanban-card--next': oldestInColumn(col) === element.id && col !== 'done' }]"
+              :class="['kanban-card', { 'kanban-card--next': col !== 'done' && oldestInColumn(col) === element.id }]"
               tabindex="0"
               role="button"
               :aria-label="`${element.client_name}${element.style ? ', ' + element.style : ''}. Press Enter to open, Arrow Left or Right to move between columns.`"
@@ -182,7 +185,7 @@ function closeProject() {
             </div>
           </template>
         </draggable>
-        <div v-if="columnData[col].length === 0" class="kanban-column__empty">
+        <div v-if="columnLists[col].length === 0" class="kanban-column__empty">
           No projects yet — drag one here or use Quick Add
         </div>
       </div>
