@@ -6,17 +6,21 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { useCalendar } from '../composables/useCalendar.js';
 import { useProjects } from '../composables/useProjects.js';
+import { useToast } from '../composables/useToast.js';
 import EventModal from '../components/EventModal.vue';
 
-const { events, loading, load } = useCalendar();
+const { events, loading, load, update } = useCalendar();
 const { load: loadProjects } = useProjects();
+const { show: toast } = useToast();
 
 const showEvent = ref(false);
 const initialDate = ref('');
 const editEvent = ref(null);
 
 onMounted(async () => {
-  await Promise.all([load(), loadProjects()]);
+  const [evResult, prResult] = await Promise.all([load(), loadProjects()]);
+  if (evResult?.error) toast('Could not load calendar events', { type: 'error' });
+  if (prResult?.error) toast('Could not load projects', { type: 'error' });
 });
 
 const calendarEvents = computed(() =>
@@ -77,21 +81,25 @@ function handleEventClick(info) {
 }
 
 async function handleEventDrop(info) {
-  const { update } = useCalendar();
-  await update(info.event.id, {
+  const { error } = await update(info.event.id, {
     start_time: info.event.start.toISOString(),
     end_time: info.event.end.toISOString(),
   });
-  await load();
+  if (error) {
+    toast('Could not move event', { type: 'error' });
+    info.revert();
+  }
 }
 
 async function handleEventResize(info) {
-  const { update } = useCalendar();
-  await update(info.event.id, {
+  const { error } = await update(info.event.id, {
     start_time: info.event.start.toISOString(),
     end_time: info.event.end.toISOString(),
   });
-  await load();
+  if (error) {
+    toast('Could not resize event', { type: 'error' });
+    info.revert();
+  }
 }
 
 function onEventSaved() {
@@ -102,17 +110,17 @@ function onEventSaved() {
 <template>
   <div class="view-calendar">
     <!-- Legend -->
-    <div class="cal-legend">
-      <span class="cal-legend__item">
-        <span class="cal-legend__dot" style="background:#c9a84c"></span>
+    <div class="cal-legend" role="list" aria-label="Event type legend">
+      <span class="cal-legend__item" role="listitem">
+        <span class="cal-legend__dot cal-legend__dot--session" aria-hidden="true"></span>
         Tattoo Session
       </span>
-      <span class="cal-legend__item">
-        <span class="cal-legend__dot" style="background:#5b8fb9"></span>
+      <span class="cal-legend__item" role="listitem">
+        <span class="cal-legend__dot cal-legend__dot--drawing" aria-hidden="true"></span>
         Drawing Block
       </span>
-      <span class="cal-legend__item">
-        <span class="cal-legend__dot" style="background:#8a7d6b"></span>
+      <span class="cal-legend__item" role="listitem">
+        <span class="cal-legend__dot cal-legend__dot--personal" aria-hidden="true"></span>
         Personal
       </span>
     </div>
@@ -159,6 +167,9 @@ function onEventSaved() {
   height: 8px;
   border-radius: 50%;
 }
+.cal-legend__dot--session { background: var(--color-gold); }
+.cal-legend__dot--drawing { background: var(--color-blue, #5b8fb9); }
+.cal-legend__dot--personal { background: var(--color-muted); }
 
 .cal-loading {
   display: flex;

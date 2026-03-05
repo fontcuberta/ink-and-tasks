@@ -4,6 +4,7 @@ import { useProjects } from '../composables/useProjects.js';
 import { useToast } from '../composables/useToast.js';
 import { useAuth } from '../composables/useAuth.js';
 import { supabase } from '../supabase.js';
+import { trapFocus } from '../utils/trapFocus.js';
 
 const props = defineProps({ project: Object });
 const emit = defineEmits(['close']);
@@ -132,6 +133,7 @@ const styleOptions = [
         class="project-overlay"
         @mousedown.self="$emit('close')"
         @keydown.esc="$emit('close')"
+        @keydown="trapFocus"
       >
         <div class="project-modal" role="dialog" aria-modal="true" aria-label="Project details">
           <div class="project-modal__header">
@@ -155,12 +157,12 @@ const styleOptions = [
                       v-if="!img.is_primary"
                       class="pm-image__btn"
                       @click="setPrimary(img)"
-                      title="Set as primary"
+                      aria-label="Set as primary image"
                     ><i class="ph-thin ph-star"></i></button>
                     <button
                       class="pm-image__btn pm-image__btn--danger"
                       @click="deleteImage(img)"
-                      title="Delete image"
+                      aria-label="Delete image"
                     ><i class="ph-thin ph-trash"></i></button>
                   </div>
                   <span v-if="img.is_primary" class="pm-image__primary">Primary</span>

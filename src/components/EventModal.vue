@@ -3,6 +3,7 @@ import { ref, computed, watch, nextTick } from 'vue';
 import { useCalendar } from '../composables/useCalendar.js';
 import { useProjects } from '../composables/useProjects.js';
 import { useToast } from '../composables/useToast.js';
+import { trapFocus } from '../utils/trapFocus.js';
 
 const props = defineProps({
   modelValue: Boolean,
@@ -122,6 +123,7 @@ async function handleDelete() {
         class="event-overlay"
         @mousedown.self="close"
         @keydown.esc="close"
+        @keydown="trapFocus"
       >
         <div class="event-modal" role="dialog" aria-modal="true" aria-label="Calendar event">
           <h3 class="event-modal__title">{{ isEdit ? 'Edit Event' : 'New Event' }}</h3>

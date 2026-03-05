@@ -4,6 +4,7 @@ import { useConsent } from '../composables/useConsent.js';
 import { useProjects } from '../composables/useProjects.js';
 import { useToast } from '../composables/useToast.js';
 import { supabase } from '../supabase.js';
+import { trapFocus } from '../utils/trapFocus.js';
 import SignaturePadComponent from '../components/SignaturePad.vue';
 
 const { forms, loading, load, create } = useConsent();
@@ -45,7 +46,9 @@ function resetForm() {
 }
 
 onMounted(async () => {
-  await Promise.all([load(), loadProjects()]);
+  const [cResult, pResult] = await Promise.all([load(), loadProjects()]);
+  if (cResult?.error) toast('Could not load consent forms', { type: 'error' });
+  if (pResult?.error) toast('Could not load projects', { type: 'error' });
 });
 
 function fillFromProject() {
@@ -122,7 +125,8 @@ function printForm(f) {
             <h3 class="cf-section__title">
               <i class="ph-thin ph-link"></i> Link to Project
             </h3>
-            <select v-model="form.project_id" class="input input--select" @change="fillFromProject">
+            <label class="form-label" for="cf-project">Project</label>
+            <select id="cf-project" v-model="form.project_id" class="input input--select" @change="fillFromProject">
               <option value="">— none —</option>
               <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.client_name }}</option>
             </select>
@@ -222,7 +226,12 @@ function printForm(f) {
         v-for="f in forms"
         :key="f.id"
         class="consent-card"
+        tabindex="0"
+        role="button"
+        :aria-label="`View consent form for ${f.client_name}`"
         @click="printForm(f)"
+        @keydown.enter.prevent="printForm(f)"
+        @keydown.space.prevent="printForm(f)"
       >
         <div class="consent-card__icon">
           <i class="ph-thin ph-file-text"></i>
@@ -246,8 +255,9 @@ function printForm(f) {
           class="print-overlay"
           @mousedown.self="viewForm = null"
           @keydown.esc="viewForm = null"
+          @keydown="trapFocus"
         >
-          <div class="print-modal">
+          <div class="print-modal" role="dialog" aria-modal="true" aria-label="Consent record">
             <div class="print-modal__header">
               <h3 class="print-modal__title">Consent Record</h3>
               <button class="print-modal__close" @click="viewForm = null" aria-label="Close">

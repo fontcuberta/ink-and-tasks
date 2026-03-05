@@ -85,6 +85,32 @@ async function onDragEnd(col, evt) {
   }
 }
 
+function nextColumn(col) {
+  const idx = COLUMNS.indexOf(col);
+  return idx < COLUMNS.length - 1 ? COLUMNS[idx + 1] : null;
+}
+
+function prevColumn(col) {
+  const idx = COLUMNS.indexOf(col);
+  return idx > 0 ? COLUMNS[idx - 1] : null;
+}
+
+async function moveCardKeyboard(element, col, direction) {
+  const target = direction === 'right' ? nextColumn(col) : prevColumn(col);
+  if (!target) return;
+  playWhoosh();
+  const { error } = await moveToColumn(element.id, target, 0);
+  if (error) {
+    toast('Move failed', { message: error.message, type: 'error' });
+    return;
+  }
+  if (target === 'done') {
+    celebrate();
+    playSuccess();
+    recordProgress();
+  }
+}
+
 function openProject(project) {
   selectedProject.value = project;
 }
@@ -106,7 +132,7 @@ function closeProject() {
     <div class="kanban">
       <div v-for="col in COLUMNS" :key="col" class="kanban-column">
         <div class="kanban-column__header">
-          <i :class="columnIcons[col]"></i>
+          <i :class="columnIcons[col]" aria-hidden="true"></i>
           <span class="kanban-column__title">{{ columnLabels[col] }}</span>
           <ProgressRing
             v-if="totalProjects > 0"
@@ -131,7 +157,15 @@ function closeProject() {
           <template #item="{ element }">
             <div
               :class="['kanban-card', { 'kanban-card--next': oldestInColumn(col) === element.id && col !== 'done' }]"
+              tabindex="0"
+              role="button"
+              :aria-label="`${element.client_name}${element.style ? ', ' + element.style : ''}. Press Enter to open, Arrow Left or Right to move between columns.`"
+              aria-roledescription="draggable project card"
               @click="openProject(element)"
+              @keydown.enter.prevent="openProject(element)"
+              @keydown.space.prevent="openProject(element)"
+              @keydown.right.prevent="moveCardKeyboard(element, col, 'right')"
+              @keydown.left.prevent="moveCardKeyboard(element, col, 'left')"
             >
               <div v-if="primaryImage(element)" class="kanban-card__thumb">
                 <img :src="primaryImage(element)" alt="" loading="lazy" />
@@ -149,14 +183,14 @@ function closeProject() {
           </template>
         </draggable>
         <div v-if="columnData[col].length === 0" class="kanban-column__empty">
-          No projects
+          No projects yet — drag one here or use Quick Add
         </div>
       </div>
     </div>
 
     <!-- Quick add FAB -->
     <button class="fab" @click="showQuickAdd = true" aria-label="Add project">
-      <i class="ph-thin ph-plus"></i>
+      <i class="ph-thin ph-plus" aria-hidden="true"></i>
     </button>
 
     <!-- Modals -->

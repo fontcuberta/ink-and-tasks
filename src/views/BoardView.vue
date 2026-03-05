@@ -1,11 +1,16 @@
 <script setup>
 import { onMounted } from 'vue';
 import { useProjects } from '../composables/useProjects.js';
+import { useToast } from '../composables/useToast.js';
 import KanbanBoard from '../components/KanbanBoard.vue';
 
 const { projects, loading, load } = useProjects();
+const { show: toast } = useToast();
 
-onMounted(load);
+onMounted(async () => {
+  const result = await load();
+  if (result?.error) toast('Could not load projects', { type: 'error' });
+});
 </script>
 
 <template>

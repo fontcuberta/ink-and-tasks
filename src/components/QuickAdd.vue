@@ -4,6 +4,7 @@ import { useProjects } from '../composables/useProjects.js';
 import { useToast } from '../composables/useToast.js';
 import { useAuth } from '../composables/useAuth.js';
 import { supabase } from '../supabase.js';
+import { trapFocus } from '../utils/trapFocus.js';
 
 const props = defineProps({ modelValue: Boolean });
 const emit = defineEmits(['update:modelValue', 'created']);
@@ -85,6 +86,7 @@ async function submit() {
         class="quick-overlay"
         @mousedown.self="close"
         @keydown.esc="close"
+        @keydown="trapFocus"
       >
         <div class="quick-modal" role="dialog" aria-modal="true" aria-label="Quick add project">
           <h3 class="quick-modal__title">New Project</h3>

@@ -50,15 +50,47 @@ function clear() {
   emit('update:modelValue', '');
 }
 
+function onTypedSignature(e) {
+  const name = e.target.value.trim();
+  if (!name) { emit('update:modelValue', ''); return; }
+  const c = canvas.value;
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const ratio = Math.max(window.devicePixelRatio || 1, 1);
+  pad?.clear();
+  ctx.save();
+  ctx.font = `italic ${24 * ratio}px 'Cormorant Garamond', serif`;
+  ctx.fillStyle = '#e8dcc8';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(name, 20 * ratio, (c.height / 2));
+  ctx.restore();
+  emit('update:modelValue', c.toDataURL());
+}
+
 defineExpose({ clear });
 </script>
 
 <template>
   <div class="sig-wrapper" ref="wrapper">
-    <canvas ref="canvas" class="sig-canvas"></canvas>
+    <canvas
+      ref="canvas"
+      class="sig-canvas"
+      role="img"
+      aria-label="Signature drawing area. Use mouse or touch to sign, or type your name in the text field below."
+    ></canvas>
     <button type="button" class="sig-clear" @click="clear" aria-label="Clear signature">
-      <i class="ph-thin ph-eraser"></i> Clear
+      <i class="ph-thin ph-eraser" aria-hidden="true"></i> Clear
     </button>
+  </div>
+  <div class="sig-text-alt">
+    <label class="form-label" for="sig-typed">Or type your name</label>
+    <input
+      id="sig-typed"
+      type="text"
+      class="input"
+      placeholder="Type full name as signature"
+      @input="onTypedSignature"
+    />
   </div>
 </template>
 
@@ -96,5 +128,8 @@ defineExpose({ clear });
 }
 .sig-clear:hover {
   color: var(--color-cream);
+}
+.sig-text-alt {
+  margin-top: 0.5rem;
 }
 </style>

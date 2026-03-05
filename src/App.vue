@@ -102,8 +102,9 @@ onMounted(async () => {
         v-else-if="isSignedIn"
         class="btn--signout btn--signout-sm"
         @click="handleSignOut"
+        aria-label="Sign out"
       >
-        <i class="ph-thin ph-sign-out"></i>
+        <i class="ph-thin ph-sign-out" aria-hidden="true"></i>
       </button>
     </header>
 
