@@ -75,6 +75,11 @@ body {
 /* ============================================================
    ACCESSIBILITY
    ============================================================ */
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -85,6 +90,15 @@ body {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ============================================================
@@ -115,8 +129,9 @@ body {
   opacity: 0.7;
 }
 .input:focus {
-  border-color: var(--color-gold-dim);
+  border-color: var(--color-gold);
   box-shadow: 0 0 0 3px var(--color-gold-glow);
+  outline: none;
 }
 .input--select {
   cursor: pointer;

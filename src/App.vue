@@ -20,8 +20,12 @@ function openAuth(tab = 'signin') {
 }
 
 async function handleSignOut() {
-  await signOut();
-  toast('Signed out', { type: 'info' });
+  try {
+    await signOut();
+    toast('Signed out', { type: 'info' });
+  } catch (err) {
+    toast('Sign out failed', { message: err.message, type: 'error' });
+  }
 }
 
 watch(isSignedIn, (val) => {

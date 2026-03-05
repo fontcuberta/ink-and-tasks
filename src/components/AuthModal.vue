@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick, watch } from 'vue';
 import { useAuth } from '../composables/useAuth.js';
 import { useToast } from '../composables/useToast.js';
 
@@ -22,6 +22,20 @@ const emailInput = ref(null);
 const visible = computed({
   get: () => props.modelValue,
   set: v => emit('update:modelValue', v),
+});
+
+watch(() => props.initialTab, (tab) => {
+  if (visible.value) activeTab.value = tab;
+});
+
+watch(visible, (v) => {
+  if (v) {
+    activeTab.value = props.initialTab;
+    email.value = '';
+    password.value = '';
+    error.value = '';
+    nextTick(() => emailInput.value?.focus());
+  }
 });
 
 function setTab(tab) {

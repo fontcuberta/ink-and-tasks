@@ -17,6 +17,7 @@ const { count: streakCount, recordProgress } = useStreak();
 
 const selectedProject = ref(null);
 const showQuickAdd = ref(false);
+const liveMessage = ref('');
 
 const columnLabels = {
   inbox: 'Inbox',
@@ -47,16 +48,41 @@ watch(() => projects.value, () => {
 const totalProjects = computed(() => projects.value.length);
 const doneCount = computed(() => columnLists.done?.length ?? 0);
 
+async function getSignedUrl(path) {
+  if (!path) return '';
+  const { data, error } = await supabase.storage.from('reference-images').createSignedUrl(path, 3600);
+  if (error) return '';
+  return data?.signedUrl ?? '';
+}
+
+const imageUrlCache = ref({});
+
+async function ensureImageUrl(path) {
+  if (!path || imageUrlCache.value[path]) return;
+  imageUrlCache.value[path] = await getSignedUrl(path);
+}
+
 function getImageUrl(path) {
   if (!path) return '';
-  const { data } = supabase.storage.from('reference-images').getPublicUrl(path);
-  return data?.publicUrl ?? '';
+  ensureImageUrl(path);
+  return imageUrlCache.value[path] ?? '';
 }
 
 function primaryImage(project) {
   const img = project.project_images?.find(i => i.is_primary)
     || project.project_images?.[0];
   return img ? getImageUrl(img.storage_path) : null;
+}
+
+function timeSince(dateStr) {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days < 1) return 'today';
+  if (days === 1) return '1d';
+  if (days < 30) return `${days}d`;
+  const months = Math.floor(days / 30);
+  return `${months}mo`;
 }
 
 function oldestInColumn(col) {
@@ -86,6 +112,8 @@ async function onColumnChange(col, evt) {
     playSuccess();
     recordProgress();
   }
+
+  liveMessage.value = `${item.client_name} moved to ${columnLabels[col]}`;
 }
 
 function nextColumn(col) {
@@ -112,6 +140,8 @@ async function moveCardKeyboard(element, col, direction) {
     playSuccess();
     recordProgress();
   }
+
+  liveMessage.value = `${element.client_name} moved to ${columnLabels[target]}`;
 }
 
 function openProject(project) {
@@ -132,8 +162,10 @@ function closeProject() {
       <span><strong>{{ streakCount }}</strong> day{{ streakCount !== 1 ? 's' : '' }} streak</span>
     </div>
 
+    <div aria-live="polite" aria-atomic="true" class="sr-only">{{ liveMessage }}</div>
+
     <div class="kanban">
-      <div v-for="col in COLUMNS" :key="col" class="kanban-column">
+      <div v-for="col in COLUMNS" :key="col" class="kanban-column" role="group" :aria-label="columnLabels[col] + ' — ' + columnLists[col].length + ' projects'">
         <div class="kanban-column__header">
           <i :class="columnIcons[col]" aria-hidden="true"></i>
           <span class="kanban-column__title">{{ columnLabels[col] }}</span>
@@ -159,7 +191,7 @@ function closeProject() {
         >
           <template #item="{ element }">
             <div
-              :class="['kanban-card', { 'kanban-card--next': col !== 'done' && oldestInColumn(col) === element.id }]"
+              :class="['kanban-card', { 'kanban-card--next': col !== 'done' && oldestInColumn(col) === element.id, 'kanban-card--done': col === 'done' }]"
               tabindex="0"
               role="button"
               :aria-label="`${element.client_name}${element.style ? ', ' + element.style : ''}. Press Enter to open, Arrow Left or Right to move between columns.`"
@@ -180,6 +212,7 @@ function closeProject() {
                     {{ element.style }}
                   </span>
                   <span v-if="element.size" class="kanban-card__size">{{ element.size }}</span>
+                  <span v-if="col !== 'done' && timeSince(element.created_at)" class="kanban-card__age">{{ timeSince(element.created_at) }}</span>
                 </div>
               </div>
             </div>
@@ -372,6 +405,21 @@ function closeProject() {
 .kanban-card__size {
   font-size: 0.7rem;
   color: var(--color-muted);
+}
+.kanban-card__age {
+  font-size: 0.65rem;
+  color: var(--color-muted);
+  margin-left: auto;
+  opacity: 0.7;
+}
+
+/* Done column cards: visually de-emphasised */
+.kanban-card--done {
+  opacity: 0.55;
+  border-color: var(--color-border);
+}
+.kanban-card--done:hover {
+  opacity: 0.8;
 }
 
 /* FAB */

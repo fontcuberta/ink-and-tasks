@@ -12,18 +12,21 @@ export function useProjects() {
 
   async function load() {
     loading.value = true;
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*, project_images(id, storage_path, is_primary)')
-      .order('position', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*, project_images(id, storage_path, is_primary)')
+        .order('position', { ascending: true });
 
-    if (error) {
-      console.error('[Projects]', error.message);
-      return { error };
+      if (error) {
+        console.error('[Projects]', error.message);
+        return { error };
+      }
+      projects.value = data ?? [];
+      return { data };
+    } finally {
+      loading.value = false;
     }
-    projects.value = data ?? [];
-    loading.value = false;
-    return { data };
   }
 
   async function create(project) {

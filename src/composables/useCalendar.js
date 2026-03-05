@@ -10,18 +10,21 @@ export function useCalendar() {
 
   async function load() {
     loading.value = true;
-    const { data, error } = await supabase
-      .from('calendar_events')
-      .select('*, projects(client_name, style)')
-      .order('start_time', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('calendar_events')
+        .select('*, projects(client_name, style)')
+        .order('start_time', { ascending: true });
 
-    if (error) {
-      console.error('[Calendar]', error.message);
-      return { error };
+      if (error) {
+        console.error('[Calendar]', error.message);
+        return { error };
+      }
+      events.value = data ?? [];
+      return { data };
+    } finally {
+      loading.value = false;
     }
-    events.value = data ?? [];
-    loading.value = false;
-    return { data };
   }
 
   async function create(event) {

@@ -100,6 +100,10 @@ const viewForm = ref(null);
 function printForm(f) {
   viewForm.value = f;
 }
+
+function printPage() {
+  window.print();
+}
 </script>
 
 <template>
@@ -175,7 +179,8 @@ function printForm(f) {
             <h3 class="cf-section__title">
               <i class="ph-thin ph-checks"></i> Acknowledgements
             </h3>
-            <div class="cf-checks">
+            <fieldset class="cf-checks">
+              <legend class="sr-only">Acknowledgements — all required</legend>
               <label
                 v-for="(ack, i) in form.acknowledgements"
                 :key="i"
@@ -184,7 +189,7 @@ function printForm(f) {
                 <input type="checkbox" v-model="ack.checked" class="cf-check__input" />
                 <span class="cf-check__text">{{ ack.text }}</span>
               </label>
-            </div>
+            </fieldset>
           </section>
 
           <!-- Signature -->
@@ -286,7 +291,7 @@ function printForm(f) {
               </div>
             </div>
             <div class="print-modal__footer">
-              <button class="btn btn--ghost" @click="window.print()">
+              <button class="btn btn--ghost" @click="printPage">
                 <i class="ph-thin ph-printer"></i> Print
               </button>
             </div>
@@ -367,6 +372,9 @@ function printForm(f) {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  border: none;
+  padding: 0;
+  margin: 0;
 }
 .cf-check {
   display: flex;

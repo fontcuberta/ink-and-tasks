@@ -3,6 +3,7 @@ import { supabase } from '../supabase.js';
 
 const user = ref(null);
 const loading = ref(true);
+let authSubscription = null;
 
 export function useAuth() {
   const isAnonymous = computed(() => user.value?.is_anonymous === true);
@@ -20,9 +21,10 @@ export function useAuth() {
         user.value = session.user;
       }
 
-      supabase.auth.onAuthStateChange((_event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         user.value = session?.user ?? null;
       });
+      authSubscription = subscription;
     } finally {
       loading.value = false;
     }
@@ -40,8 +42,10 @@ export function useAuth() {
   }
 
   async function signOut() {
-    await supabase.auth.signOut();
-    await supabase.auth.signInAnonymously();
+    const { error: signOutErr } = await supabase.auth.signOut();
+    if (signOutErr) throw signOutErr;
+    const { error: anonErr } = await supabase.auth.signInAnonymously();
+    if (anonErr) throw anonErr;
   }
 
   return {

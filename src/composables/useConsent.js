@@ -10,18 +10,21 @@ export function useConsent() {
 
   async function load() {
     loading.value = true;
-    const { data, error } = await supabase
-      .from('consent_forms')
-      .select('*, projects(client_name)')
-      .order('signed_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('consent_forms')
+        .select('*, projects(client_name)')
+        .order('signed_at', { ascending: false });
 
-    if (error) {
-      console.error('[Consent]', error.message);
-      return { error };
+      if (error) {
+        console.error('[Consent]', error.message);
+        return { error };
+      }
+      forms.value = data ?? [];
+      return { data };
+    } finally {
+      loading.value = false;
     }
-    forms.value = data ?? [];
-    loading.value = false;
-    return { data };
   }
 
   async function create(form, signatureBlob) {

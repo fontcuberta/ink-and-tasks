@@ -58,9 +58,18 @@ async function refreshProjectEvents() {
 
 const images = computed(() => props.project?.project_images ?? []);
 
+const imageUrls = ref({});
+
+async function resolveImageUrl(path) {
+  if (!path || imageUrls.value[path]) return;
+  const { data } = await supabase.storage.from('reference-images').createSignedUrl(path, 3600);
+  if (data?.signedUrl) imageUrls.value[path] = data.signedUrl;
+}
+
 function getImageUrl(path) {
-  const { data } = supabase.storage.from('reference-images').getPublicUrl(path);
-  return data?.publicUrl ?? '';
+  if (!path) return '';
+  resolveImageUrl(path);
+  return imageUrls.value[path] ?? '';
 }
 
 async function save() {
@@ -102,11 +111,17 @@ async function uploadImage(e) {
   }
 
   const isPrimary = images.value.length === 0;
-  await supabase.from('project_images').insert({
+  const { error: insertErr } = await supabase.from('project_images').insert({
     project_id: props.project.id,
     storage_path: path,
     is_primary: isPrimary,
   });
+
+  if (insertErr) {
+    toast('Image uploaded but record failed', { message: insertErr.message, type: 'error' });
+    imageUploading.value = false;
+    return;
+  }
 
   toast('Image uploaded', { type: 'success' });
   imageUploading.value = false;
@@ -114,19 +129,35 @@ async function uploadImage(e) {
 }
 
 async function deleteImage(img) {
-  await supabase.storage.from('reference-images').remove([img.storage_path]);
-  await supabase.from('project_images').delete().eq('id', img.id);
+  const { error: storageErr } = await supabase.storage.from('reference-images').remove([img.storage_path]);
+  if (storageErr) {
+    toast('Could not remove file', { message: storageErr.message, type: 'error' });
+    return;
+  }
+  const { error: dbErr } = await supabase.from('project_images').delete().eq('id', img.id);
+  if (dbErr) {
+    toast('Could not remove image record', { message: dbErr.message, type: 'error' });
+    return;
+  }
   toast('Image removed', { type: 'info' });
   emit('close');
 }
 
 async function setPrimary(img) {
-  await supabase.from('project_images')
+  const { error: clearErr } = await supabase.from('project_images')
     .update({ is_primary: false })
     .eq('project_id', props.project.id);
-  await supabase.from('project_images')
+  if (clearErr) {
+    toast('Could not update images', { message: clearErr.message, type: 'error' });
+    return;
+  }
+  const { error: setErr } = await supabase.from('project_images')
     .update({ is_primary: true })
     .eq('id', img.id);
+  if (setErr) {
+    toast('Could not set primary', { message: setErr.message, type: 'error' });
+    return;
+  }
   toast('Primary image updated', { type: 'success' });
   emit('close');
 }
@@ -425,7 +456,8 @@ const styleOptions = [
   opacity: 0;
   transition: opacity 0.2s;
 }
-.pm-image:hover .pm-image__actions { opacity: 1; }
+.pm-image:hover .pm-image__actions,
+.pm-image:focus-within .pm-image__actions { opacity: 1; }
 .pm-image__btn {
   width: 22px;
   height: 22px;
@@ -472,7 +504,17 @@ const styleOptions = [
 }
 .pm-image-add:hover { border-color: var(--color-gold-dim); }
 .pm-image-add i { font-size: 1.2rem; }
-.pm-image-add__input { display: none; }
+.pm-image-add__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 /* Scheduled events */
 .pm-schedule-btn {
