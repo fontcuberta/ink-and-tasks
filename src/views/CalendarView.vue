@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, reactive, computed, watch, onMounted } from 'vue';
 import FullCalendar from '@fullcalendar/vue3';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -23,18 +23,6 @@ onMounted(async () => {
   if (prResult?.error) toast('Could not load projects', { type: 'error' });
 });
 
-const calendarEvents = computed(() =>
-  events.value.map(e => ({
-    id: e.id,
-    title: e.title,
-    start: e.start_time,
-    end: e.end_time,
-    backgroundColor: e.color || typeColor(e.event_type),
-    borderColor: e.color || typeColor(e.event_type),
-    extendedProps: { ...e },
-  }))
-);
-
 function typeColor(type) {
   const colors = {
     tattoo_session: '#c9a84c',
@@ -44,28 +32,21 @@ function typeColor(type) {
   return colors[type] ?? '#8a7d6b';
 }
 
-const calendarOptions = computed(() => ({
-  plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
-  initialView: 'timeGridWeek',
-  headerToolbar: {
-    left: 'prev,next today',
-    center: 'title',
-    right: 'dayGridMonth,timeGridWeek,timeGridDay',
-  },
-  events: calendarEvents.value,
-  editable: true,
-  selectable: true,
-  selectMirror: true,
-  nowIndicator: true,
-  slotMinTime: '07:00:00',
-  slotMaxTime: '22:00:00',
-  allDaySlot: false,
-  height: 'auto',
-  select: handleSelect,
-  eventClick: handleEventClick,
-  eventDrop: handleEventDrop,
-  eventResize: handleEventResize,
-}));
+const calendarEvents = computed(() =>
+  events.value.map(e => {
+    const clientName = e.projects?.client_name;
+    const displayTitle = clientName ? `${e.title} — ${clientName}` : e.title;
+    return {
+      id: e.id,
+      title: displayTitle,
+      start: e.start_time,
+      end: e.end_time,
+      backgroundColor: e.color || typeColor(e.event_type),
+      borderColor: e.color || typeColor(e.event_type),
+      extendedProps: { ...e },
+    };
+  })
+);
 
 function handleSelect(info) {
   editEvent.value = null;
@@ -75,8 +56,7 @@ function handleSelect(info) {
 }
 
 function handleEventClick(info) {
-  const ev = info.event.extendedProps;
-  editEvent.value = ev;
+  editEvent.value = info.event.extendedProps;
   showEvent.value = true;
 }
 
@@ -100,6 +80,39 @@ async function handleEventResize(info) {
     toast('Could not resize event', { type: 'error' });
     info.revert();
   }
+}
+
+const calendarOptions = reactive({
+  plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+  initialView: 'timeGridWeek',
+  headerToolbar: {
+    left: 'prev,next today',
+    center: 'title',
+    right: 'dayGridMonth,timeGridWeek,timeGridDay',
+  },
+  events: [],
+  editable: true,
+  selectable: true,
+  selectMirror: true,
+  nowIndicator: true,
+  slotMinTime: '07:00:00',
+  slotMaxTime: '22:00:00',
+  allDaySlot: false,
+  height: 'auto',
+  select: handleSelect,
+  eventClick: handleEventClick,
+  eventDrop: handleEventDrop,
+  eventResize: handleEventResize,
+});
+
+watch(calendarEvents, (val) => {
+  calendarOptions.events = val;
+}, { immediate: true });
+
+function openNewEvent() {
+  editEvent.value = null;
+  initialDate.value = new Date().toISOString().slice(0, 16);
+  showEvent.value = true;
 }
 
 function onEventSaved() {
@@ -132,6 +145,11 @@ function onEventSaved() {
       <FullCalendar :options="calendarOptions" />
     </div>
 
+    <!-- FAB -->
+    <button class="fab" @click="openNewEvent" aria-label="New event">
+      <i class="ph-thin ph-plus" aria-hidden="true"></i>
+    </button>
+
     <EventModal
       v-model="showEvent"
       :initialDate="initialDate"
@@ -148,6 +166,32 @@ function onEventSaved() {
   flex-direction: column;
   gap: 1rem;
   overflow-y: auto;
+  position: relative;
+}
+
+/* FAB */
+.fab {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--color-gold);
+  color: var(--color-bg);
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(201,168,76,0.35);
+  transition: transform 0.2s, box-shadow 0.2s;
+  z-index: 50;
+}
+.fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 24px rgba(201,168,76,0.45);
 }
 
 .cal-legend {

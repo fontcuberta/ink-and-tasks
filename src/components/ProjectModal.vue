@@ -1,15 +1,18 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useProjects } from '../composables/useProjects.js';
+import { useCalendar } from '../composables/useCalendar.js';
 import { useToast } from '../composables/useToast.js';
 import { useAuth } from '../composables/useAuth.js';
 import { supabase } from '../supabase.js';
 import { trapFocus } from '../utils/trapFocus.js';
+import EventModal from './EventModal.vue';
 
 const props = defineProps({ project: Object });
 const emit = defineEmits(['close']);
 
 const { update, remove } = useProjects();
+const { loadForProject } = useCalendar();
 const { show: toast } = useToast();
 const { user } = useAuth();
 
@@ -19,8 +22,10 @@ const form = ref({});
 const saving = ref(false);
 const deleting = ref(false);
 const imageUploading = ref(false);
+const projectEvents = ref([]);
+const showSchedule = ref(false);
 
-watch(() => props.project, p => {
+watch(() => props.project, async (p) => {
   if (!p) return;
   form.value = {
     client_name: p.client_name ?? '',
@@ -34,7 +39,22 @@ watch(() => props.project, p => {
     notes: p.notes ?? '',
     status: p.status ?? 'inbox',
   };
+  const { data } = await loadForProject(p.id);
+  projectEvents.value = data;
 }, { immediate: true });
+
+function formatEventDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('en-US', {
+    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+  });
+}
+
+async function refreshProjectEvents() {
+  if (!props.project) return;
+  const { data } = await loadForProject(props.project.id);
+  projectEvents.value = data;
+}
 
 const images = computed(() => props.project?.project_images ?? []);
 
@@ -246,6 +266,31 @@ const styleOptions = [
                 <textarea id="pm-notes" v-model="form.notes" class="input input--textarea" rows="3"></textarea>
               </div>
             </section>
+
+            <!-- Scheduled events -->
+            <section class="pm-section">
+              <div class="pm-section__title">
+                <i class="ph-thin ph-calendar-blank"></i> Scheduled
+                <button
+                  type="button"
+                  class="pm-schedule-btn"
+                  @click="showSchedule = true"
+                  aria-label="Schedule new appointment"
+                >
+                  <i class="ph-thin ph-plus" aria-hidden="true"></i> Add
+                </button>
+              </div>
+              <div v-if="projectEvents.length === 0" class="pm-events-empty">
+                No upcoming appointments
+              </div>
+              <ul v-else class="pm-events">
+                <li v-for="ev in projectEvents" :key="ev.id" class="pm-event">
+                  <span class="pm-event__dot" :style="{ background: ev.color || '#c9a84c' }"></span>
+                  <span class="pm-event__title">{{ ev.title }}</span>
+                  <span class="pm-event__date">{{ formatEventDate(ev.start_time) }}</span>
+                </li>
+              </ul>
+            </section>
           </div>
 
           <div class="project-modal__footer">
@@ -261,6 +306,12 @@ const styleOptions = [
       </div>
     </Transition>
   </Teleport>
+
+  <EventModal
+    v-model="showSchedule"
+    :initialProject="project?.id"
+    @saved="refreshProjectEvents"
+  />
 </template>
 
 <style scoped>
@@ -422,6 +473,66 @@ const styleOptions = [
 .pm-image-add:hover { border-color: var(--color-gold-dim); }
 .pm-image-add i { font-size: 1.2rem; }
 .pm-image-add__input { display: none; }
+
+/* Scheduled events */
+.pm-schedule-btn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-gold);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.pm-schedule-btn:hover {
+  border-color: var(--color-gold-dim);
+  background: var(--color-surface-2);
+}
+.pm-events-empty {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  opacity: 0.6;
+}
+.pm-events {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.pm-event {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--color-cream);
+  padding: 0.35rem 0.5rem;
+  background: var(--color-surface-2);
+  border-radius: 6px;
+}
+.pm-event__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.pm-event__title {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pm-event__date {
+  font-size: 0.72rem;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
 
 /* Transition */
 .modal-enter-active, .modal-leave-active { transition: opacity 0.2s; }

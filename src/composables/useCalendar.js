@@ -50,5 +50,18 @@ export function useCalendar() {
     return { error };
   }
 
-  return { events, loading, load, create, update, remove };
+  async function loadForProject(projectId) {
+    const { data, error } = await supabase
+      .from('calendar_events')
+      .select('*')
+      .eq('project_id', projectId)
+      .gte('start_time', new Date().toISOString())
+      .order('start_time', { ascending: true })
+      .limit(10);
+
+    if (error) return { data: [], error };
+    return { data: data ?? [], error: null };
+  }
+
+  return { events, loading, load, create, update, remove, loadForProject };
 }

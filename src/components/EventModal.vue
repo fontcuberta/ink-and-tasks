@@ -9,6 +9,7 @@ const props = defineProps({
   modelValue: Boolean,
   initialDate: String,
   editEvent: Object,
+  initialProject: String,
 });
 const emit = defineEmits(['update:modelValue', 'saved']);
 
@@ -27,6 +28,12 @@ const form = ref(defaultForm());
 const submitting = ref(false);
 const titleInput = ref(null);
 
+const typeLabels = {
+  tattoo_session: 'Tattoo Session',
+  drawing_block: 'Drawing Block',
+  personal: 'Personal',
+};
+
 function defaultForm() {
   const now = new Date();
   const start = props.initialDate ?? now.toISOString().slice(0, 16);
@@ -34,7 +41,7 @@ function defaultForm() {
   return {
     title: '',
     event_type: 'tattoo_session',
-    project_id: '',
+    project_id: props.initialProject ?? '',
     start_time: start,
     end_time: end,
     notes: '',
@@ -56,9 +63,25 @@ watch(visible, v => {
     } else {
       form.value = defaultForm();
     }
+    if (form.value.project_id && !form.value.title) {
+      autoFillTitle(form.value.project_id);
+    }
     nextTick(() => titleInput.value?.focus());
   }
 });
+
+function autoFillTitle(projectId) {
+  const project = projects.value.find(p => p.id === projectId);
+  if (!project) return;
+  const label = typeLabels[form.value.event_type] || '';
+  form.value.title = `${label} — ${project.client_name}`;
+}
+
+function onProjectChange() {
+  if (form.value.project_id && !form.value.title.trim()) {
+    autoFillTitle(form.value.project_id);
+  }
+}
 
 function close() {
   visible.value = false;
@@ -145,7 +168,7 @@ async function handleDelete() {
               </div>
               <div class="form-group">
                 <label class="form-label" for="ev-project">Project</label>
-                <select id="ev-project" v-model="form.project_id" class="input input--select">
+                <select id="ev-project" v-model="form.project_id" class="input input--select" @change="onProjectChange">
                   <option value="">— none —</option>
                   <option v-for="p in projects" :key="p.id" :value="p.id">
                     {{ p.client_name }}
@@ -201,7 +224,7 @@ async function handleDelete() {
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
-  z-index: 1000;
+  z-index: 1010;
   display: flex;
   align-items: center;
   justify-content: center;
