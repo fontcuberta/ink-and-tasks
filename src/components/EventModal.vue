@@ -36,12 +36,14 @@ const typeLabels = {
 
 function defaultForm() {
   const now = new Date();
-  const start = props.initialDate ?? now.toISOString().slice(0, 16);
-  const end = new Date(new Date(start).getTime() + 3600000).toISOString().slice(0, 16);
+  const raw = props.initialDate || now.toISOString().slice(0, 16);
+  const parsed = new Date(raw);
+  const start = isNaN(parsed.getTime()) ? now.toISOString().slice(0, 16) : raw.slice(0, 16);
+  const end = new Date((isNaN(parsed.getTime()) ? now : parsed).getTime() + 3600000).toISOString().slice(0, 16);
   return {
     title: '',
     event_type: 'tattoo_session',
-    project_id: props.initialProject ?? '',
+    project_id: props.initialProject || '',
     start_time: start,
     end_time: end,
     notes: '',
