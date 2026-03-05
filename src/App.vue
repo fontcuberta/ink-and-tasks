@@ -3,11 +3,14 @@ import { ref, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuth } from './composables/useAuth.js';
 import { useToast } from './composables/useToast.js';
+import { useOnboarding } from './composables/useOnboarding.js';
 import AuthModal from './components/AuthModal.vue';
 import ToastContainer from './components/ToastContainer.vue';
+import WelcomeWizard from './components/WelcomeWizard.vue';
 
 const { user, loading, isAnonymous, isSignedIn, email, init, signOut } = useAuth();
 const { show: toast } = useToast();
+const { reset: replayOnboarding } = useOnboarding();
 const route = useRoute();
 
 const showAuth = ref(false);
@@ -88,6 +91,10 @@ onMounted(async () => {
         <template v-else-if="!loading">
           <button class="btn btn--gold btn--sm" @click="openAuth('signin')">Sign in</button>
         </template>
+        <button class="sidebar__replay" @click="replayOnboarding">
+          <i class="ph-thin ph-play-circle" aria-hidden="true"></i>
+          Replay tour
+        </button>
       </div>
     </aside>
 
@@ -124,6 +131,7 @@ onMounted(async () => {
     <!-- Overlays -->
     <AuthModal v-model="showAuth" :initialTab="authTab" />
     <ToastContainer />
+    <WelcomeWizard />
 
     <!-- Mobile sidebar backdrop -->
     <Transition name="fade">
@@ -222,6 +230,22 @@ onMounted(async () => {
   font-size: 0.78rem;
   color: var(--color-muted);
   margin: 0;
+}
+.sidebar__replay {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  transition: color 0.2s;
+}
+.sidebar__replay:hover {
+  color: var(--color-gold);
 }
 
 .btn--signout {
